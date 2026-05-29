@@ -49,6 +49,12 @@ export async function handleStripeWebhook(rawBody: Buffer, signature: string) {
     const intent = event.data.object as Stripe.PaymentIntent;
     const orderId = intent.metadata.orderId;
 
+    // BR-PAY03: idempotency — skip if already processed
+    const existing = await prisma.payment.findFirst({
+      where: { providerTxId: intent.id, status: 'completed' },
+    });
+    if (existing) return;
+
     await prisma.$transaction([
       prisma.payment.updateMany({
         where: { providerTxId: intent.id },
@@ -144,18 +150,21 @@ export async function handleVNPayReturn(query: Record<string, string>) {
 
   if (responseCode === '00') {
     const payment = await prisma.payment.findFirst({ where: { providerTxId: txnRef } });
-    if (payment) {
-      await prisma.$transaction([
-        prisma.payment.update({
-          where: { id: payment.id },
-          data: { status: 'completed', paidAt: new Date(), providerResponse: query as any },
-        }),
-        prisma.order.update({
-          where: { id: payment.orderId },
-          data: { status: 'confirmed' },
-        }),
-      ]);
-    }
+    if (!payment) return { success: false, code: 'NOT_FOUND' };
+
+    // BR-PAY03: idempotency — skip if already processed
+    if (payment.status === 'completed') return { success: true };
+
+    await prisma.$transaction([
+      prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: 'completed', paidAt: new Date(), providerResponse: query as any },
+      }),
+      prisma.order.update({
+        where: { id: payment.orderId },
+        data: { status: 'confirmed' },
+      }),
+    ]);
     return { success: true };
   }
 

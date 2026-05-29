@@ -12,6 +12,9 @@ const REFRESH_TOKEN_PREFIX = 'refresh:';
 const RESET_TOKEN_PREFIX = 'reset:';
 const VERIFY_TOKEN_PREFIX = 'verify:';
 
+// Dummy hash prevents timing-based user enumeration: bcrypt always runs even when user doesn't exist
+const DUMMY_HASH = '$2a$12$LHDTaOJVCwUckIHkFRD.YOM75e.bk8bpqwsYGiPdBDRuimJo.O.Ky';
+
 async function getUserRole(userId: string): Promise<string> {
   const userRole = await prisma.userRole.findFirst({
     where: { userId, isActive: true },
@@ -79,9 +82,8 @@ export async function login(dto: LoginDto, ipAddress?: string, userAgent?: strin
     select: { id: true, email: true, fullName: true, passwordHash: true, isActive: true, deletedAt: true },
   });
 
-  const valid = user?.passwordHash
-    ? await bcrypt.compare(dto.password, user.passwordHash)
-    : false;
+  const valid = await bcrypt.compare(dto.password, user?.passwordHash ?? DUMMY_HASH)
+    && !!user?.passwordHash;
 
   await prisma.loginAttempt.create({
     data: {
