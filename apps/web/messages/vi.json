@@ -1,0 +1,218 @@
+{
+  "Metadata": {
+    "title": "My Shop",
+    "description": "Mua sắm online chất lượng cao – hàng trong và ngoài nước"
+  },
+  "Common": {
+    "loading": "Đang tải...",
+    "error": "Đã có lỗi xảy ra",
+    "retry": "Thử lại",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Chỉnh sửa",
+    "confirm": "Xác nhận",
+    "close": "Đóng",
+    "back": "Quay lại",
+    "next": "Tiếp theo",
+    "previous": "Trước",
+    "search": "Tìm kiếm",
+    "filter": "Lọc",
+    "sort": "Sắp xếp",
+    "clear": "Xóa tất cả",
+    "viewAll": "Xem tất cả",
+    "noResults": "Không tìm thấy kết quả",
+    "required": "Trường này là bắt buộc",
+    "optional": "(tùy chọn)",
+    "or": "hoặc"
+  },
+  "Nav": {
+    "home": "Trang chủ",
+    "products": "Sản phẩm",
+    "categories": "Danh mục",
+    "blog": "Blog",
+    "cart": "Giỏ hàng",
+    "wishlist": "Yêu thích",
+    "account": "Tài khoản",
+    "orders": "Đơn hàng",
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "logout": "Đăng xuất",
+    "admin": "Quản trị"
+  },
+  "Home": {
+    "title": "Chào mừng đến My Shop",
+    "hero": {
+      "heading": "Mua sắm không giới hạn",
+      "subheading": "Hàng nghìn sản phẩm chất lượng, giao hàng toàn quốc và quốc tế",
+      "cta": "Mua ngay"
+    },
+    "featuredProducts": "Sản phẩm nổi bật",
+    "newArrivals": "Hàng mới về",
+    "topCategories": "Danh mục phổ biến",
+    "latestPosts": "Bài viết mới nhất"
+  },
+  "Products": {
+    "pageTitle": "Sản phẩm",
+    "sortBy": "Sắp xếp theo",
+    "sortOptions": {
+      "newest": "Mới nhất",
+      "priceAsc": "Giá tăng dần",
+      "priceDesc": "Giá giảm dần",
+      "popular": "Phổ biến nhất",
+      "rating": "Đánh giá cao"
+    },
+    "filter": {
+      "title": "Bộ lọc",
+      "priceRange": "Khoảng giá",
+      "category": "Danh mục",
+      "rating": "Đánh giá",
+      "inStock": "Còn hàng"
+    },
+    "addToCart": "Thêm vào giỏ",
+    "addToWishlist": "Yêu thích",
+    "outOfStock": "Hết hàng",
+    "inStock": "Còn {count} sản phẩm",
+    "compareAtPrice": "Giá gốc",
+    "discount": "Giảm {percent}%",
+    "reviews": "{count} đánh giá",
+    "noReviews": "Chưa có đánh giá",
+    "relatedProducts": "Sản phẩm liên quan",
+    "description": "Mô tả sản phẩm",
+    "specifications": "Thông số kỹ thuật",
+    "selectVariant": "Chọn phân loại",
+    "quantity": "Số lượng"
+  },
+  "Cart": {
+    "pageTitle": "Giỏ hàng",
+    "empty": "Giỏ hàng trống",
+    "emptyDescription": "Bắt đầu mua sắm ngay nào!",
+    "continueShopping": "Tiếp tục mua sắm",
+    "item": "{count} sản phẩm",
+    "remove": "Xóa",
+    "subtotal": "Tạm tính",
+    "shipping": "Phí vận chuyển",
+    "shippingFree": "Miễn phí",
+    "shippingCalculated": "Tính khi thanh toán",
+    "discount": "Giảm giá",
+    "total": "Tổng cộng",
+    "checkout": "Tiến hành thanh toán",
+    "coupon": "Mã giảm giá",
+    "applyCoupon": "Áp dụng",
+    "couponApplied": "Đã áp dụng mã {code}",
+    "maxQuantity": "Đã đạt giới hạn tồn kho"
+  },
+  "Checkout": {
+    "pageTitle": "Thanh toán",
+    "shippingAddress": "Địa chỉ giao hàng",
+    "paymentMethod": "Phương thức thanh toán",
+    "stripe": "Thẻ quốc tế (Visa/Mastercard)",
+    "vnpay": "VNPay (ATM / QR)",
+    "cod": "Thanh toán khi nhận hàng",
+    "orderSummary": "Tóm tắt đơn hàng",
+    "placeOrder": "Đặt hàng",
+    "processing": "Đang xử lý...",
+    "successTitle": "Đặt hàng thành công!",
+    "successMessage": "Đơn hàng #{number} đã được xác nhận. Chúng tôi sẽ liên hệ với bạn sớm.",
+    "viewOrder": "Xem đơn hàng"
+  },
+  "Orders": {
+    "pageTitle": "Lịch sử đơn hàng",
+    "empty": "Bạn chưa có đơn hàng nào",
+    "orderNumber": "Mã đơn #{number}",
+    "status": {
+      "pending": "Chờ xác nhận",
+      "confirmed": "Đã xác nhận",
+      "processing": "Đang xử lý",
+      "shipped": "Đang giao",
+      "delivered": "Đã giao",
+      "cancelled": "Đã hủy",
+      "refunded": "Đã hoàn tiền"
+    },
+    "paymentStatus": {
+      "pending": "Chờ thanh toán",
+      "completed": "Đã thanh toán",
+      "failed": "Thanh toán thất bại",
+      "refunded": "Đã hoàn tiền"
+    },
+    "placedOn": "Đặt ngày {date}",
+    "total": "Tổng: {amount}",
+    "cancelOrder": "Hủy đơn hàng",
+    "trackOrder": "Theo dõi đơn hàng"
+  },
+  "Account": {
+    "pageTitle": "Tài khoản",
+    "profile": "Thông tin cá nhân",
+    "addresses": "Địa chỉ",
+    "security": "Bảo mật",
+    "fullName": "Họ và tên",
+    "email": "Email",
+    "phone": "Số điện thoại",
+    "saveChanges": "Lưu thay đổi",
+    "changePassword": "Đổi mật khẩu",
+    "currentPassword": "Mật khẩu hiện tại",
+    "newPassword": "Mật khẩu mới",
+    "confirmPassword": "Xác nhận mật khẩu mới",
+    "addAddress": "Thêm địa chỉ",
+    "defaultAddress": "Địa chỉ mặc định",
+    "setDefault": "Đặt làm mặc định"
+  },
+  "Auth": {
+    "loginTitle": "Đăng nhập",
+    "registerTitle": "Tạo tài khoản",
+    "email": "Email",
+    "password": "Mật khẩu",
+    "fullName": "Họ và tên",
+    "rememberMe": "Ghi nhớ đăng nhập",
+    "forgotPassword": "Quên mật khẩu?",
+    "loginButton": "Đăng nhập",
+    "registerButton": "Đăng ký",
+    "haveAccount": "Đã có tài khoản?",
+    "noAccount": "Chưa có tài khoản?",
+    "loginLink": "Đăng nhập",
+    "registerLink": "Đăng ký ngay",
+    "errors": {
+      "invalidCredentials": "Email hoặc mật khẩu không đúng",
+      "emailExists": "Email này đã được sử dụng",
+      "weakPassword": "Mật khẩu phải có ít nhất 8 ký tự"
+    }
+  },
+  "Wishlist": {
+    "pageTitle": "Danh sách yêu thích",
+    "empty": "Danh sách yêu thích trống",
+    "emptyDescription": "Lưu những sản phẩm bạn thích để mua sau!"
+  },
+  "Blog": {
+    "pageTitle": "Blog",
+    "readMore": "Đọc thêm",
+    "publishedOn": "Đăng ngày {date}",
+    "by": "bởi {author}",
+    "tags": "Thẻ",
+    "relatedPosts": "Bài viết liên quan"
+  },
+  "Admin": {
+    "dashboard": "Bảng điều khiển",
+    "products": "Sản phẩm",
+    "orders": "Đơn hàng",
+    "customers": "Khách hàng",
+    "blog": "Blog",
+    "media": "Thư viện media",
+    "settings": "Cài đặt",
+    "stats": {
+      "totalRevenue": "Doanh thu",
+      "totalOrders": "Đơn hàng",
+      "totalCustomers": "Khách hàng",
+      "totalProducts": "Sản phẩm"
+    },
+    "recentOrders": "Đơn hàng gần đây",
+    "createProduct": "Thêm sản phẩm",
+    "editProduct": "Chỉnh sửa sản phẩm",
+    "deleteConfirm": "Bạn có chắc chắn muốn xóa?"
+  },
+  "Errors": {
+    "404": "Trang không tìm thấy",
+    "500": "Lỗi máy chủ",
+    "unauthorized": "Bạn không có quyền truy cập",
+    "sessionExpired": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại"
+  }
+}

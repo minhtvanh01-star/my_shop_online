@@ -1,0 +1,48 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd apps/api && npm run dev)",
+      "Bash(cd apps/api && npm run build)",
+      "Bash(cd apps/api && npm run typecheck)",
+      "Bash(cd apps/api && npm run db:generate)",
+      "Bash(cd apps/api && npm run db:migrate)",
+      "Bash(cd apps/api && npm run db:push)",
+      "Bash(cd apps/api && npm run db:studio)",
+      "Bash(cd apps/api && npm run db:seed)",
+      "Bash(cd apps/api && npm install *)",
+      "Bash(cd apps/api && npx prisma *)",
+      "Bash(npm install *)",
+      "Bash(git status)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git branch *)",
+      "Bash(git checkout *)",
+      "Bash(git stash *)",
+      "Bash(find * -type f *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(curl -s http://localhost:4000*)"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Bash(prisma migrate reset*)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"e:/project_job/my_shop_online/apps/api\" && npm run typecheck 2>&1 | tail -5"
+          }
+        ]
+      }
+    ]
+  }
+}
