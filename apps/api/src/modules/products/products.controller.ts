@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { z } from 'zod';
 import { created, ok, paginated } from '../../utils/response';
 import {
   CreateProductSchema,
@@ -52,6 +53,26 @@ export async function deleteProductHandler(req: Request, res: Response, next: Ne
   try {
     await ProductsService.deleteProduct(req.params.id, req.user!.id);
     ok(res, { message: 'Product deleted' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function listAdminProductsHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const query = ProductListQuery.parse(req.query);
+    const result = await ProductsService.listAdminProducts(query);
+    paginated(res, result.items, { page: result.page, limit: result.limit, total: result.total });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function toggleActiveHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { isActive } = z.object({ isActive: z.boolean() }).parse(req.body);
+    const product = await ProductsService.toggleProductActive(req.params.id, isActive, req.user!.id);
+    ok(res, product);
   } catch (err) {
     next(err);
   }

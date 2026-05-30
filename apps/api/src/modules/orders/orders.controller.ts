@@ -20,7 +20,7 @@ export async function getUserOrdersHandler(req: Request, res: Response, next: Ne
 
 export async function getOrderHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const order = await OrdersService.getOrderById(req.params.id, req.user!.id);
+    const order = await OrdersService.getOrderById(req.params.id, req.user!.id, req.user!.role);
     ok(res, order);
   } catch (err) {
     next(err);
@@ -39,7 +39,7 @@ export async function createOrderHandler(req: Request, res: Response, next: Next
 
 export async function cancelOrderHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    await OrdersService.cancelOrder(req.params.id, req.user!.id);
+    await OrdersService.cancelOrder(req.params.id, req.user!.id, req.user!.role);
     ok(res, { message: 'Order cancelled' });
   } catch (err) {
     next(err);

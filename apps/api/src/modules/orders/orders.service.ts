@@ -53,9 +53,10 @@ export async function getUserOrders(userId: string, page: number, limit: number)
   return { items, total, page, limit };
 }
 
-export async function getOrderById(id: string, userId?: string) {
+export async function getOrderById(id: string, userId?: string, role?: string) {
+  const isAdmin = role && ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(role);
   const order = await prisma.order.findFirst({
-    where: { id, ...(userId && { userId }) },
+    where: { id, ...(!isAdmin && userId && { userId }) },
     include: {
       orderItems: true,
       payments: true,
@@ -77,31 +78,48 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
 
   if (cartItems.length === 0) throw new AppError(400, 'Cart is empty', 'EMPTY_CART');
 
-  // Validate stock and compute prices
+  // Early validation: product still active (user-friendly check, real stock check is inside tx)
   for (const item of cartItems) {
-    const stock = item.variant ? item.variant.stockQuantity : item.product.stockQuantity;
-    if (stock < item.quantity) {
-      throw new AppError(
-        400,
-        `Insufficient stock for ${item.product.translations[0]?.name ?? item.product.sku}`,
-        'INSUFFICIENT_STOCK',
-      );
+    if (!item.product.isActive || item.product.deletedAt) {
+      const name = item.product.translations[0]?.name ?? item.product.sku;
+      throw new AppError(400, `"${name}" is no longer available`, 'PRODUCT_INACTIVE');
     }
   }
 
   let coupon: Awaited<ReturnType<typeof prisma.coupon.findFirst>> | null = null;
   if (dto.couponCode) {
+    const now = new Date();
+
+    // BR-C01 step 1: exists + active
     coupon = await prisma.coupon.findFirst({
-      where: {
-        code: dto.couponCode,
-        isActive: true,
-        deletedAt: null,
-        OR: [{ expiresAt: null }, { expiresAt: { gte: new Date() } }],
-      },
+      where: { code: dto.couponCode, isActive: true, deletedAt: null },
     });
-    if (!coupon || (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses)) {
-      throw new AppError(400, 'Invalid or expired coupon', 'INVALID_COUPON');
+    if (!coupon) throw new AppError(400, 'Invalid or expired coupon', 'INVALID_COUPON');
+
+    // BR-C01 step 2: within date range
+    if (coupon.startDate && coupon.startDate > now) {
+      throw new AppError(400, 'Coupon is not yet active', 'INVALID_COUPON');
     }
+    if (coupon.expiresAt && coupon.expiresAt < now) {
+      throw new AppError(400, 'Coupon has expired', 'COUPON_EXPIRED');
+    }
+
+    // BR-C01 step 3: usage limit
+    if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
+      throw new AppError(400, 'Coupon has reached its usage limit', 'COUPON_EXHAUSTED');
+    }
+
+    // BR-C01 step 4: per-user limit
+    if (coupon.perUserLimit !== null) {
+      const userUsageCount = await prisma.orderCoupon.count({
+        where: { couponId: coupon.id, order: { userId } },
+      });
+      if (userUsageCount >= coupon.perUserLimit) {
+        throw new AppError(400, 'You have exceeded the usage limit for this coupon', 'COUPON_EXHAUSTED');
+      }
+    }
+
+    // BR-C01 step 5: minimum order amount (checked after subtotal is computed below)
   }
 
   const subtotal = cartItems.reduce((sum, item) => {
@@ -109,6 +127,17 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
     const modifier = item.variant ? Number(item.variant.priceModifier) : 0;
     return sum + (base + modifier) * item.quantity;
   }, 0);
+
+  // BR-C01 step 5: minimum order amount
+  if (coupon?.minOrderAmount !== null && coupon?.minOrderAmount !== undefined) {
+    if (subtotal < Number(coupon.minOrderAmount)) {
+      throw new AppError(
+        400,
+        `Order must be at least ${coupon.minOrderAmount} to use this coupon`,
+        'INVALID_COUPON',
+      );
+    }
+  }
 
   let discountAmount = 0;
   if (coupon) {
@@ -160,32 +189,60 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
       include: { orderItems: true },
     });
 
-    // Deduct stock
+    // Atomic stock check + deduction — race-condition safe (BR-I01, BR-I02)
+    // updateMany with WHERE stockQuantity >= quantity generates a single atomic SQL UPDATE.
+    // If another transaction already decremented the stock, count===0 and this tx rolls back.
     for (const item of cartItems) {
+      const productName = item.product.translations[0]?.name ?? item.product.sku;
+
       if (item.variantId) {
-        await tx.productVariant.update({
-          where: { id: item.variantId },
+        const updated = await tx.productVariant.updateMany({
+          where: { id: item.variantId, stockQuantity: { gte: item.quantity } },
           data: { stockQuantity: { decrement: item.quantity } },
+        });
+        if (updated.count === 0) {
+          throw new AppError(400, `Insufficient stock for "${productName}"`, 'INSUFFICIENT_STOCK');
+        }
+        const afterVariant = await tx.productVariant.findUnique({
+          where: { id: item.variantId },
+          select: { stockQuantity: true },
+        });
+        await tx.inventoryTransaction.create({
+          data: {
+            productId: item.productId,
+            variantId: item.variantId,
+            orderId: created.id,
+            actorId: userId,
+            type: 'sale',
+            quantityChange: -item.quantity,
+            quantityBefore: afterVariant!.stockQuantity + item.quantity,
+            quantityAfter: afterVariant!.stockQuantity,
+          },
         });
       } else {
-        await tx.product.update({
-          where: { id: item.productId },
+        const updated = await tx.product.updateMany({
+          where: { id: item.productId, stockQuantity: { gte: item.quantity }, deletedAt: null },
           data: { stockQuantity: { decrement: item.quantity } },
         });
+        if (updated.count === 0) {
+          throw new AppError(400, `Insufficient stock for "${productName}"`, 'INSUFFICIENT_STOCK');
+        }
+        const afterProduct = await tx.product.findUnique({
+          where: { id: item.productId },
+          select: { stockQuantity: true },
+        });
+        await tx.inventoryTransaction.create({
+          data: {
+            productId: item.productId,
+            orderId: created.id,
+            actorId: userId,
+            type: 'sale',
+            quantityChange: -item.quantity,
+            quantityBefore: afterProduct!.stockQuantity + item.quantity,
+            quantityAfter: afterProduct!.stockQuantity,
+          },
+        });
       }
-
-      await tx.inventoryTransaction.create({
-        data: {
-          productId: item.productId,
-          variantId: item.variantId,
-          orderId: created.id,
-          actorId: userId,
-          type: 'sale',
-          quantityChange: -item.quantity,
-          quantityBefore: item.variant ? item.variant.stockQuantity : item.product.stockQuantity,
-          quantityAfter: (item.variant ? item.variant.stockQuantity : item.product.stockQuantity) - item.quantity,
-        },
-      });
     }
 
     if (coupon) {
@@ -201,15 +258,81 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
   return order;
 }
 
-export async function cancelOrder(orderId: string, userId: string) {
-  const order = await prisma.order.findFirst({ where: { id: orderId, userId } });
-  if (!order) throw new AppError(404, 'Order not found', 'NOT_FOUND');
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['processing', 'cancelled'],
+  processing: ['shipped'],
+  shipped: ['delivered'],
+  delivered: ['refunded'],
+  cancelled: [],
+  refunded: [],
+};
 
-  if (!['pending', 'confirmed'].includes(order.status)) {
-    throw new AppError(400, 'Order cannot be cancelled at this stage', 'INVALID_STATUS');
+export async function cancelOrder(orderId: string, actorId: string, role: string) {
+  const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(role);
+
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, ...(!isAdmin && { userId: actorId }) },
+    include: { orderItems: true },
+  });
+  if (!order) throw new AppError(404, 'Order not found', 'ORDER_NOT_FOUND');
+
+  const allowedStatuses = isAdmin ? ['pending', 'confirmed'] : ['pending'];
+  if (!allowedStatuses.includes(order.status)) {
+    throw new AppError(400, 'Order cannot be cancelled at this stage', 'ORDER_CANNOT_CANCEL');
   }
 
-  await prisma.order.update({ where: { id: orderId }, data: { status: 'cancelled' } });
+  await prisma.$transaction(async (tx) => {
+    await tx.order.update({ where: { id: orderId }, data: { status: 'cancelled' } });
+
+    for (const item of order.orderItems) {
+      const product = await tx.product.findUnique({
+        where: { id: item.productId },
+        select: { stockQuantity: true },
+      });
+
+      if (item.variantId) {
+        const variant = await tx.productVariant.findUnique({
+          where: { id: item.variantId },
+          select: { stockQuantity: true },
+        });
+        if (variant) {
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: { stockQuantity: { increment: item.quantity } },
+          });
+          await tx.inventoryTransaction.create({
+            data: {
+              productId: item.productId,
+              variantId: item.variantId,
+              orderId,
+              actorId,
+              type: 'return',
+              quantityChange: item.quantity,
+              quantityBefore: variant.stockQuantity,
+              quantityAfter: variant.stockQuantity + item.quantity,
+            },
+          });
+        }
+      } else if (product) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stockQuantity: { increment: item.quantity } },
+        });
+        await tx.inventoryTransaction.create({
+          data: {
+            productId: item.productId,
+            orderId,
+            actorId,
+            type: 'return',
+            quantityChange: item.quantity,
+            quantityBefore: product.stockQuantity,
+            quantityAfter: product.stockQuantity + item.quantity,
+          },
+        });
+      }
+    }
+  });
 }
 
 export async function getAdminOrders(query: AdminOrderListQueryDto) {
@@ -236,7 +359,16 @@ export async function getAdminOrders(query: AdminOrderListQueryDto) {
 
 export async function updateOrderStatus(orderId: string, dto: UpdateOrderStatusDto, processedBy: string) {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) throw new AppError(404, 'Order not found', 'NOT_FOUND');
+  if (!order) throw new AppError(404, 'Order not found', 'ORDER_NOT_FOUND');
+
+  const allowed = VALID_TRANSITIONS[order.status] ?? [];
+  if (!allowed.includes(dto.status)) {
+    throw new AppError(
+      400,
+      `Cannot transition order from '${order.status}' to '${dto.status}'`,
+      'INVALID_STATUS_TRANSITION',
+    );
+  }
 
   return prisma.order.update({
     where: { id: orderId },

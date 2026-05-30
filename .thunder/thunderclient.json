@@ -1,0 +1,401 @@
+{
+  "_id": "col-myshop-001",
+  "colName": "My Shop Online API",
+  "created": "2026-05-30T00:00:00.000Z",
+  "sortNum": 10000,
+  "client": "Thunder Client",
+  "envName": "Local",
+  "envData": {
+    "base_url": "http://localhost:4000/api/v1",
+    "token": "",
+    "refresh_token": "",
+    "product_id": "",
+    "product_slug": "",
+    "order_id": "",
+    "category_id": "",
+    "review_id": "",
+    "cart_item_id": "",
+    "media_id": "",
+    "address_id": ""
+  },
+  "folders": [
+    { "_id": "f-auth",     "name": "🔑 Auth",       "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 10000 },
+    { "_id": "f-users",    "name": "👤 Users",       "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 20000 },
+    { "_id": "f-products", "name": "📦 Products",    "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 30000 },
+    { "_id": "f-cats",     "name": "🗂 Categories",  "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 40000 },
+    { "_id": "f-cart",     "name": "🛒 Cart",        "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 50000 },
+    { "_id": "f-orders",   "name": "📋 Orders",      "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 60000 },
+    { "_id": "f-payments", "name": "💳 Payments",    "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 70000 },
+    { "_id": "f-reviews",  "name": "⭐ Reviews",     "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 80000 },
+    { "_id": "f-wishlist", "name": "❤️  Wishlist",   "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 90000 },
+    { "_id": "f-blog",     "name": "📝 Blog",        "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 100000 },
+    { "_id": "f-pages",    "name": "📄 Pages",       "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 110000 },
+    { "_id": "f-media",    "name": "🖼  Media",       "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 120000 },
+    { "_id": "f-admin",    "name": "🔧 Admin",       "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 130000 },
+    { "_id": "f-settings", "name": "⚙️  Settings",   "containerId": "", "created": "2026-05-30T00:00:00.000Z", "sortNum": 140000 }
+  ],
+  "requests": [
+
+    { "_id": "r-health", "colId": "col-myshop-001", "containerId": "", "name": "Health Check", "url": "http://localhost:4000/health", "method": "GET", "sortNum": 5000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z", "headers": [], "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-auth-register", "colId": "col-myshop-001", "containerId": "f-auth", "name": "Register", "url": "{{base_url}}/auth/register", "method": "POST", "sortNum": 10000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"Password123!\",\n  \"fullName\": \"Nguyễn Văn A\",\n  \"phone\": \"+84901234567\",\n  \"locale\": \"vi\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-auth-login", "colId": "col-myshop-001", "containerId": "f-auth", "name": "Login", "url": "{{base_url}}/auth/login", "method": "POST", "sortNum": 11000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"email\": \"customer@example.com\",\n  \"password\": \"Password123!\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-auth-login-admin", "colId": "col-myshop-001", "containerId": "f-auth", "name": "Login (Admin)", "url": "{{base_url}}/auth/login", "method": "POST", "sortNum": 11500, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"AdminPass123!\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-auth-refresh", "colId": "col-myshop-001", "containerId": "f-auth", "name": "Refresh Token", "url": "{{base_url}}/auth/refresh", "method": "POST", "sortNum": 12000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-auth-logout", "colId": "col-myshop-001", "containerId": "f-auth", "name": "Logout", "url": "{{base_url}}/auth/logout", "method": "POST", "sortNum": 13000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-auth-forgot", "colId": "col-myshop-001", "containerId": "f-auth", "name": "Forgot Password", "url": "{{base_url}}/auth/forgot-password", "method": "POST", "sortNum": 14000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"email\": \"customer@example.com\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-auth-reset", "colId": "col-myshop-001", "containerId": "f-auth", "name": "Reset Password", "url": "{{base_url}}/auth/reset-password", "method": "POST", "sortNum": 15000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"token\": \"<reset_token_from_redis>\",\n  \"password\": \"NewPassword123!\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-auth-verify", "colId": "col-myshop-001", "containerId": "f-auth", "name": "Verify Email", "url": "{{base_url}}/auth/verify-email", "method": "POST", "sortNum": 16000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"token\": \"<verify_token_from_redis>\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-users-me", "colId": "col-myshop-001", "containerId": "f-users", "name": "Get My Profile", "url": "{{base_url}}/users/me", "method": "GET", "sortNum": 20000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-users-me-update", "colId": "col-myshop-001", "containerId": "f-users", "name": "Update My Profile", "url": "{{base_url}}/users/me", "method": "PUT", "sortNum": 21000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"fullName\": \"Nguyễn Văn A Updated\",\n  \"phone\": \"+84901234999\",\n  \"locale\": \"vi\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-users-password", "colId": "col-myshop-001", "containerId": "f-users", "name": "Change Password", "url": "{{base_url}}/users/me/password", "method": "PUT", "sortNum": 22000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"currentPassword\": \"Password123!\",\n  \"newPassword\": \"NewPassword456!\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-users-addrs", "colId": "col-myshop-001", "containerId": "f-users", "name": "List My Addresses", "url": "{{base_url}}/users/me/addresses", "method": "GET", "sortNum": 23000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-users-addr-create", "colId": "col-myshop-001", "containerId": "f-users", "name": "Create Address", "url": "{{base_url}}/users/me/addresses", "method": "POST", "sortNum": 24000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"recipientName\": \"Nguyễn Văn A\",\n  \"phone\": \"+84901234567\",\n  \"addressLine1\": \"123 Lê Lợi\",\n  \"city\": \"Hồ Chí Minh\",\n  \"countryCode\": \"VN\",\n  \"isDefault\": true\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-users-addr-update", "colId": "col-myshop-001", "containerId": "f-users", "name": "Update Address", "url": "{{base_url}}/users/me/addresses/{{address_id}}", "method": "PUT", "sortNum": 25000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"addressLine1\": \"456 Nguyễn Huệ\",\n  \"city\": \"Hồ Chí Minh\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-users-addr-delete", "colId": "col-myshop-001", "containerId": "f-users", "name": "Delete Address", "url": "{{base_url}}/users/me/addresses/{{address_id}}", "method": "DELETE", "sortNum": 26000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-prod-list", "colId": "col-myshop-001", "containerId": "f-products", "name": "List Products (Public)", "url": "{{base_url}}/products", "method": "GET", "sortNum": 30000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [],
+      "params": [{ "name": "page", "value": "1" }, { "name": "limit", "value": "10" }, { "name": "locale", "value": "vi" }],
+      "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-prod-list-admin", "colId": "col-myshop-001", "containerId": "f-products", "name": "List Products (Admin)", "url": "{{base_url}}/products/admin", "method": "GET", "sortNum": 30500, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [{ "name": "page", "value": "1" }, { "name": "limit", "value": "20" }],
+      "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-prod-get", "colId": "col-myshop-001", "containerId": "f-products", "name": "Get Product by Slug", "url": "{{base_url}}/products/{{product_slug}}", "method": "GET", "sortNum": 31000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [],
+      "params": [{ "name": "locale", "value": "vi" }],
+      "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-prod-create", "colId": "col-myshop-001", "containerId": "f-products", "name": "Create Product", "url": "{{base_url}}/products", "method": "POST", "sortNum": 32000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"categoryId\": \"{{category_id}}\",\n  \"slug\": \"ao-thun-nam-basic\",\n  \"sku\": \"ATN-BASIC-001\",\n  \"basePrice\": 250000,\n  \"currency\": \"VND\",\n  \"stockQuantity\": 100,\n  \"isFeatured\": false,\n  \"translations\": [\n    {\n      \"locale\": \"vi\",\n      \"name\": \"Áo thun nam basic\",\n      \"description\": \"Áo thun nam chất liệu cotton 100%\"\n    },\n    {\n      \"locale\": \"en\",\n      \"name\": \"Men Basic T-Shirt\",\n      \"description\": \"100% cotton men basic t-shirt\"\n    }\n  ]\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-prod-update", "colId": "col-myshop-001", "containerId": "f-products", "name": "Update Product", "url": "{{base_url}}/products/{{product_id}}", "method": "PUT", "sortNum": 33000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"basePrice\": 299000,\n  \"stockQuantity\": 150\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-prod-active", "colId": "col-myshop-001", "containerId": "f-products", "name": "Toggle Product Active", "url": "{{base_url}}/products/{{product_id}}/active", "method": "PATCH", "sortNum": 34000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"isActive\": true\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-prod-delete", "colId": "col-myshop-001", "containerId": "f-products", "name": "Delete Product (Soft)", "url": "{{base_url}}/products/{{product_id}}", "method": "DELETE", "sortNum": 35000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-prod-variants", "colId": "col-myshop-001", "containerId": "f-products", "name": "Get Variants", "url": "{{base_url}}/products/{{product_id}}/variants", "method": "GET", "sortNum": 36000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-prod-variant-create", "colId": "col-myshop-001", "containerId": "f-products", "name": "Create Variant", "url": "{{base_url}}/products/{{product_id}}/variants", "method": "POST", "sortNum": 37000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"sku\": \"ATN-BASIC-001-L\",\n  \"optionName\": \"size\",\n  \"optionValue\": \"L\",\n  \"priceModifier\": 0,\n  \"stockQuantity\": 30\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-cats-list", "colId": "col-myshop-001", "containerId": "f-cats", "name": "List Categories (Tree)", "url": "{{base_url}}/categories", "method": "GET", "sortNum": 40000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [], "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-cats-get", "colId": "col-myshop-001", "containerId": "f-cats", "name": "Get Category by Slug", "url": "{{base_url}}/categories/thoi-trang-nam", "method": "GET", "sortNum": 41000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [], "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-cats-create", "colId": "col-myshop-001", "containerId": "f-cats", "name": "Create Category", "url": "{{base_url}}/categories", "method": "POST", "sortNum": 42000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"slug\": \"thoi-trang-nam\",\n  \"name\": \"Thời trang nam\",\n  \"sortOrder\": 1\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-cats-update", "colId": "col-myshop-001", "containerId": "f-cats", "name": "Update Category", "url": "{{base_url}}/categories/{{category_id}}", "method": "PUT", "sortNum": 43000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"name\": \"Thời trang nam (updated)\",\n  \"sortOrder\": 2\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-cats-delete", "colId": "col-myshop-001", "containerId": "f-cats", "name": "Delete Category (Soft)", "url": "{{base_url}}/categories/{{category_id}}", "method": "DELETE", "sortNum": 44000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-cart-get", "colId": "col-myshop-001", "containerId": "f-cart", "name": "Get Cart", "url": "{{base_url}}/cart", "method": "GET", "sortNum": 50000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-cart-add", "colId": "col-myshop-001", "containerId": "f-cart", "name": "Add Item to Cart", "url": "{{base_url}}/cart/items", "method": "POST", "sortNum": 51000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"productId\": \"{{product_id}}\",\n  \"quantity\": 2\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-cart-update", "colId": "col-myshop-001", "containerId": "f-cart", "name": "Update Cart Item Qty", "url": "{{base_url}}/cart/items/{{cart_item_id}}", "method": "PUT", "sortNum": 52000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"quantity\": 3\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-cart-remove", "colId": "col-myshop-001", "containerId": "f-cart", "name": "Remove Cart Item", "url": "{{base_url}}/cart/items/{{cart_item_id}}", "method": "DELETE", "sortNum": 53000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-cart-clear", "colId": "col-myshop-001", "containerId": "f-cart", "name": "Clear Cart", "url": "{{base_url}}/cart", "method": "DELETE", "sortNum": 54000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-orders-list", "colId": "col-myshop-001", "containerId": "f-orders", "name": "My Orders", "url": "{{base_url}}/orders", "method": "GET", "sortNum": 60000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [{ "name": "page", "value": "1" }, { "name": "limit", "value": "10" }],
+      "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-orders-admin", "colId": "col-myshop-001", "containerId": "f-orders", "name": "Admin — All Orders", "url": "{{base_url}}/orders/admin", "method": "GET", "sortNum": 60500, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [{ "name": "page", "value": "1" }, { "name": "status", "value": "pending" }],
+      "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-orders-get", "colId": "col-myshop-001", "containerId": "f-orders", "name": "Get Order Detail", "url": "{{base_url}}/orders/{{order_id}}", "method": "GET", "sortNum": 61000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-orders-create", "colId": "col-myshop-001", "containerId": "f-orders", "name": "Checkout (Create Order)", "url": "{{base_url}}/orders", "method": "POST", "sortNum": 62000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"shippingAddress\": {\n    \"recipientName\": \"Nguyễn Văn A\",\n    \"phone\": \"+84901234567\",\n    \"addressLine1\": \"123 Lê Lợi\",\n    \"city\": \"Hồ Chí Minh\",\n    \"countryCode\": \"VN\"\n  },\n  \"currency\": \"VND\",\n  \"locale\": \"vi\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-orders-cancel", "colId": "col-myshop-001", "containerId": "f-orders", "name": "Cancel Order", "url": "{{base_url}}/orders/{{order_id}}/cancel", "method": "PATCH", "sortNum": 63000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-orders-status", "colId": "col-myshop-001", "containerId": "f-orders", "name": "Admin — Update Order Status", "url": "{{base_url}}/orders/{{order_id}}/status", "method": "PATCH", "sortNum": 64000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"status\": \"confirmed\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-pay-stripe", "colId": "col-myshop-001", "containerId": "f-payments", "name": "Create Stripe Intent", "url": "{{base_url}}/payments/stripe/intent", "method": "POST", "sortNum": 70000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"orderId\": \"{{order_id}}\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-pay-vnpay", "colId": "col-myshop-001", "containerId": "f-payments", "name": "Create VNPay URL", "url": "{{base_url}}/payments/vnpay/create", "method": "POST", "sortNum": 71000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"orderId\": \"{{order_id}}\",\n  \"ipAddress\": \"127.0.0.1\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-reviews-list", "colId": "col-myshop-001", "containerId": "f-reviews", "name": "List Product Reviews", "url": "{{base_url}}/reviews", "method": "GET", "sortNum": 80000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [],
+      "params": [{ "name": "productId", "value": "{{product_id}}" }, { "name": "page", "value": "1" }],
+      "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-reviews-create", "colId": "col-myshop-001", "containerId": "f-reviews", "name": "Create Review", "url": "{{base_url}}/reviews", "method": "POST", "sortNum": 81000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"productId\": \"{{product_id}}\",\n  \"orderItemId\": \"<order_item_id>\",\n  \"rating\": 5,\n  \"title\": \"Sản phẩm tốt!\",\n  \"body\": \"Chất lượng vải rất tốt, giao hàng nhanh.\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-reviews-update", "colId": "col-myshop-001", "containerId": "f-reviews", "name": "Update Review", "url": "{{base_url}}/reviews/{{review_id}}", "method": "PUT", "sortNum": 82000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"rating\": 4,\n  \"title\": \"Khá tốt\",\n  \"body\": \"Đã dùng 1 tháng, vẫn đẹp.\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-reviews-delete", "colId": "col-myshop-001", "containerId": "f-reviews", "name": "Delete Review", "url": "{{base_url}}/reviews/{{review_id}}", "method": "DELETE", "sortNum": 83000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-reviews-approve", "colId": "col-myshop-001", "containerId": "f-reviews", "name": "Admin — Approve Review", "url": "{{base_url}}/reviews/{{review_id}}/approve", "method": "PATCH", "sortNum": 84000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"status\": \"approved\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-wish-get", "colId": "col-myshop-001", "containerId": "f-wishlist", "name": "Get Wishlist", "url": "{{base_url}}/wishlist", "method": "GET", "sortNum": 90000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-wish-add", "colId": "col-myshop-001", "containerId": "f-wishlist", "name": "Add to Wishlist", "url": "{{base_url}}/wishlist/{{product_id}}", "method": "POST", "sortNum": 91000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-wish-remove", "colId": "col-myshop-001", "containerId": "f-wishlist", "name": "Remove from Wishlist", "url": "{{base_url}}/wishlist/{{product_id}}", "method": "DELETE", "sortNum": 92000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-blog-list", "colId": "col-myshop-001", "containerId": "f-blog", "name": "List Blog Posts", "url": "{{base_url}}/blog", "method": "GET", "sortNum": 100000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [],
+      "params": [{ "name": "page", "value": "1" }, { "name": "locale", "value": "vi" }],
+      "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-blog-cats", "colId": "col-myshop-001", "containerId": "f-blog", "name": "List Blog Categories", "url": "{{base_url}}/blog/categories", "method": "GET", "sortNum": 100500, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [], "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-blog-get", "colId": "col-myshop-001", "containerId": "f-blog", "name": "Get Post by Slug", "url": "{{base_url}}/blog/huong-dan-chon-size", "method": "GET", "sortNum": 101000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [],
+      "params": [{ "name": "locale", "value": "vi" }],
+      "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-blog-create", "colId": "col-myshop-001", "containerId": "f-blog", "name": "Create Post", "url": "{{base_url}}/blog", "method": "POST", "sortNum": 102000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"categoryId\": \"<post_category_id>\",\n  \"slug\": \"huong-dan-chon-size\",\n  \"status\": \"published\",\n  \"translations\": [\n    {\n      \"locale\": \"vi\",\n      \"title\": \"Hướng dẫn chọn size áo\",\n      \"content\": \"Nội dung bài viết...\",\n      \"excerpt\": \"Tóm tắt ngắn gọn\"\n    }\n  ]\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-blog-cat-create", "colId": "col-myshop-001", "containerId": "f-blog", "name": "Create Blog Category", "url": "{{base_url}}/blog/categories", "method": "POST", "sortNum": 103000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"slug\": \"thoi-trang\",\n  \"name\": \"Thời trang\",\n  \"sortOrder\": 1\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-pages-get", "colId": "col-myshop-001", "containerId": "f-pages", "name": "Get Page by Slug", "url": "{{base_url}}/pages/chinh-sach-doi-tra", "method": "GET", "sortNum": 110000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [],
+      "params": [{ "name": "locale", "value": "vi" }],
+      "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-pages-create", "colId": "col-myshop-001", "containerId": "f-pages", "name": "Create Page", "url": "{{base_url}}/pages", "method": "POST", "sortNum": 111000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"slug\": \"chinh-sach-doi-tra\",\n  \"status\": \"published\",\n  \"showInNav\": true,\n  \"translations\": [\n    {\n      \"locale\": \"vi\",\n      \"title\": \"Chính sách đổi trả\",\n      \"content\": \"Nội dung chính sách...\"\n    }\n  ]\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-pages-update", "colId": "col-myshop-001", "containerId": "f-pages", "name": "Update Page", "url": "{{base_url}}/pages/<page_id>", "method": "PUT", "sortNum": 112000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"showInNav\": false\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-media-upload", "colId": "col-myshop-001", "containerId": "f-media", "name": "Upload Single File", "url": "{{base_url}}/media/upload", "method": "POST", "sortNum": 120000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [],
+      "body": { "type": "formdata", "form": [{ "name": "file", "value": "", "type": "file" }] },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-media-bulk", "colId": "col-myshop-001", "containerId": "f-media", "name": "Upload Bulk Files", "url": "{{base_url}}/media/upload/bulk", "method": "POST", "sortNum": 121000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [],
+      "body": { "type": "formdata", "form": [{ "name": "files", "value": "", "type": "file" }] },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-media-list", "colId": "col-myshop-001", "containerId": "f-media", "name": "Media Library", "url": "{{base_url}}/media", "method": "GET", "sortNum": 122000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [{ "name": "page", "value": "1" }, { "name": "limit", "value": "20" }],
+      "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-media-delete", "colId": "col-myshop-001", "containerId": "f-media", "name": "Delete Media File", "url": "{{base_url}}/media/{{media_id}}", "method": "DELETE", "sortNum": 123000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-admin-dash", "colId": "col-myshop-001", "containerId": "f-admin", "name": "Dashboard Stats", "url": "{{base_url}}/admin/dashboard", "method": "GET", "sortNum": 130000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-admin-users", "colId": "col-myshop-001", "containerId": "f-admin", "name": "List All Users", "url": "{{base_url}}/admin/users", "method": "GET", "sortNum": 131000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [{ "name": "page", "value": "1" }, { "name": "limit", "value": "20" }],
+      "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-admin-audit", "colId": "col-myshop-001", "containerId": "f-admin", "name": "Audit Logs", "url": "{{base_url}}/admin/audit-logs", "method": "GET", "sortNum": 132000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [{ "name": "page", "value": "1" }, { "name": "limit", "value": "20" }],
+      "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-settings-public", "colId": "col-myshop-001", "containerId": "f-settings", "name": "Public Settings", "url": "{{base_url}}/settings", "method": "GET", "sortNum": 140000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [], "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-settings-features", "colId": "col-myshop-001", "containerId": "f-settings", "name": "Feature Flags", "url": "{{base_url}}/settings/features", "method": "GET", "sortNum": 141000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [], "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-settings-admin", "colId": "col-myshop-001", "containerId": "f-settings", "name": "Admin — All Settings", "url": "{{base_url}}/settings/admin", "method": "GET", "sortNum": 142000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }],
+      "params": [], "body": { "type": "none" }, "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-settings-update", "colId": "col-myshop-001", "containerId": "f-settings", "name": "Update Setting", "url": "{{base_url}}/settings/site_name", "method": "PUT", "sortNum": 143000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"value\": \"My Shop Online\"\n}" },
+      "auth": { "type": "none" }, "tests": [] },
+
+    { "_id": "r-settings-flag", "colId": "col-myshop-001", "containerId": "f-settings", "name": "Toggle Feature Flag", "url": "{{base_url}}/settings/features/enable_vnpay", "method": "PATCH", "sortNum": 144000, "created": "2026-05-30T00:00:00.000Z", "modified": "2026-05-30T00:00:00.000Z",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{token}}" }, { "name": "Content-Type", "value": "application/json" }],
+      "params": [],
+      "body": { "type": "json", "raw": "{\n  \"isEnabled\": true\n}" },
+      "auth": { "type": "none" }, "tests": [] }
+
+  ]
+}

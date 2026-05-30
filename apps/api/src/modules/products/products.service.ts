@@ -136,6 +136,74 @@ export async function deleteProduct(id: string, deletedBy: string) {
   });
 }
 
+export async function listAdminProducts(query: ProductListQueryDto) {
+  const { page, limit, search, categoryId, minPrice, maxPrice, isFeatured, locale, sort } = query;
+  const skip = (page - 1) * limit;
+
+  const where: Prisma.ProductWhereInput = {
+    deletedAt: null,
+    ...(categoryId && { categoryId }),
+    ...(isFeatured !== undefined && { isFeatured }),
+    ...(search && {
+      translations: {
+        some: { locale, name: { contains: search, mode: 'insensitive' } },
+      },
+    }),
+    ...(minPrice !== undefined || maxPrice !== undefined
+      ? { basePrice: { ...(minPrice !== undefined && { gte: minPrice }), ...(maxPrice !== undefined && { lte: maxPrice }) } }
+      : {}),
+  };
+
+  const orderBy: Prisma.ProductOrderByWithRelationInput =
+    sort === 'price_asc' ? { basePrice: 'asc' }
+    : sort === 'price_desc' ? { basePrice: 'desc' }
+    : { createdAt: 'desc' };
+
+  const [total, items] = await prisma.$transaction([
+    prisma.product.count({ where }),
+    prisma.product.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy,
+      select: {
+        id: true,
+        slug: true,
+        sku: true,
+        basePrice: true,
+        currency: true,
+        stockQuantity: true,
+        isActive: true,
+        isFeatured: true,
+        createdAt: true,
+        images: { where: { isPrimary: true }, take: 1, select: { url: true, altText: true } },
+        translations: { where: { locale }, select: { name: true } },
+        category: { select: { id: true, slug: true, name: true } },
+      },
+    }),
+  ]);
+
+  return { items, total, page, limit };
+}
+
+export async function toggleProductActive(id: string, isActive: boolean, updatedBy: string) {
+  const product = await prisma.product.findFirst({ where: { id, deletedAt: null } });
+  if (!product) throw new AppError(404, 'Product not found', 'PRODUCT_NOT_FOUND');
+
+  if (isActive) {
+    const imageCount = await prisma.productImage.count({ where: { productId: id } });
+    if (imageCount === 0) {
+      throw new AppError(400, 'Product must have at least one image before activation', 'PRODUCT_NO_IMAGE');
+    }
+  }
+
+  return prisma.product.update({
+    where: { id },
+    data: { isActive, updatedBy },
+    select: { id: true, slug: true, sku: true, isActive: true },
+  });
+}
+
 export async function getProductVariants(productId: string) {
   return prisma.productVariant.findMany({
     where: { productId, isActive: true, deletedAt: null },
