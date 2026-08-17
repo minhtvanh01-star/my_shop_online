@@ -29,6 +29,16 @@ export async function getProductHandler(req: Request, res: Response, next: NextF
   }
 }
 
+export async function getAdminProductHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const locale = (req.query.locale as string) ?? 'en';
+    const product = await ProductsService.getAdminProductById(req.params.id, locale);
+    ok(res, product);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function createProductHandler(req: Request, res: Response, next: NextFunction) {
   try {
     const dto = CreateProductSchema.parse(req.body);

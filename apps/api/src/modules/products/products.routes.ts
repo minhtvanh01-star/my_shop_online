@@ -6,6 +6,7 @@ import {
   createProductHandler,
   createVariantHandler,
   deleteProductHandler,
+  getAdminProductHandler,
   getProductHandler,
   getVariantsHandler,
   listAdminProductsHandler,
@@ -18,6 +19,7 @@ const router = Router();
 
 router.get('/', listProductsHandler);
 router.get('/admin', authenticate, requireAdmin, listAdminProductsHandler);
+router.get('/admin/:id', authenticate, requireAdmin, getAdminProductHandler);
 router.get('/:slug', getProductHandler);
 router.post('/', authenticate, requireAdmin, createProductHandler);
 router.put('/:id', authenticate, requireAdmin, updateProductHandler);

@@ -11,6 +11,7 @@ export const routing = defineRouting({
     '/categories/[slug]': { vi: '/danh-muc/[slug]', en: '/categories/[slug]' },
     '/cart': { vi: '/gio-hang', en: '/cart' },
     '/checkout': { vi: '/thanh-toan', en: '/checkout' },
+    '/checkout/result': { vi: '/thanh-toan/ket-qua', en: '/checkout/result' },
     '/orders': { vi: '/don-hang', en: '/orders' },
     '/orders/[id]': { vi: '/don-hang/[id]', en: '/orders/[id]' },
     '/wishlist': { vi: '/yeu-thich', en: '/wishlist' },

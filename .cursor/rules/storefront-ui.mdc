@@ -1,0 +1,14 @@
+---
+description: Storefront and admin UI conventions for My Shop Online.
+globs: apps/web/**/*.{ts,tsx,css}
+alwaysApply: false
+---
+
+# Web UI
+
+- Read `design-system/my-shop-online/MASTER.md` and the matching `pages/*.md` before adding UI.
+- Fonts: Rubik + Nunito Sans. Icons: Lucide. CTA: `#EA580C` on black text. Page bg: white.
+- i18n: `next-intl` pathnames in `src/i18n/routing.ts`; copy in `messages/vi.json` and `en.json`.
+- Controllers live on the API — this app only calls `src/lib/api.ts`.
+- Auth pages belong at `src/app/[locale]/(storefront)/auth/login` and `auth/register`.
+- Empty comment stubs are not done. Ship visible, accessible UI.

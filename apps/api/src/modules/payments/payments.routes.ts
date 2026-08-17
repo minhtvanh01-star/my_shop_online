@@ -1,26 +1,24 @@
-import express, { Router } from 'express';
+import { Router } from 'express';
 import { authenticate } from '../../middlewares/auth.middleware';
+import { requireAdmin } from '../../middlewares/rbac.middleware';
 import {
+  createCodHandler,
   createStripeIntentHandler,
   createVNPayHandler,
-  stripeWebhookHandler,
+  refundPaymentHandler,
   vnpayIPNHandler,
   vnpayReturnHandler,
 } from './payments.controller';
 
 const router = Router();
 
-// Stripe webhook — raw body, no auth
-router.post(
-  '/stripe/webhook',
-  express.raw({ type: 'application/json' }),
-  stripeWebhookHandler,
-);
-
+// JSON body routes — mounted AFTER express.json() in app.ts
 router.post('/stripe/intent', authenticate, createStripeIntentHandler);
 router.post('/vnpay/create', authenticate, createVNPayHandler);
+router.post('/cod', authenticate, createCodHandler);
+router.post('/:id/refund', authenticate, requireAdmin, refundPaymentHandler);
 
-// VNPay return & IPN — called by VNPay servers (no auth)
+// VNPay browser return + server IPN (no auth)
 router.get('/vnpay/return', vnpayReturnHandler);
 router.post('/vnpay/ipn', vnpayIPNHandler);
 

@@ -77,13 +77,13 @@ export interface CartItem {
   productId: string;
   variantId: string | null;
   name: string;
-  nameEn: string | null;
   slug: string;
   image: string;
   price: number;
   quantity: number;
   maxQuantity: number;
-  variant: Pick<ProductVariant, 'name' | 'attributes'> | null;
+  currency: string;
+  variantLabel: string | null;
 }
 
 // ── Order ─────────────────────────────────────────────────────────────────────

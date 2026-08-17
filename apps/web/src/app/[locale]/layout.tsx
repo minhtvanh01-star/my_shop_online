@@ -1,13 +1,23 @@
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
-import { Inter } from 'next/font/google';
+import { Nunito_Sans, Rubik } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { Providers } from '@/components/providers';
 import { routing } from '@/i18n/routing';
 import '@/app/globals.css';
 
-const inter = Inter({ subsets: ['latin', 'vietnamese'], display: 'swap' });
+const nunitoSans = Nunito_Sans({
+  subsets: ['latin', 'vietnamese'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const rubik = Rubik({
+  subsets: ['latin', 'latin-ext'],
+  variable: '--font-heading',
+  display: 'swap',
+});
 
 export async function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -45,7 +55,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${nunitoSans.variable} ${rubik.variable} ${nunitoSans.className} bg-white`}>
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>

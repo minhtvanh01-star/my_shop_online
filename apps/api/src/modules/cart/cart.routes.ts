@@ -5,6 +5,7 @@ import {
   clearCartHandler,
   getCartHandler,
   removeItemHandler,
+  syncCartHandler,
   updateItemHandler,
 } from './cart.controller';
 
@@ -13,6 +14,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/', getCartHandler);
+router.post('/sync', syncCartHandler);
 router.post('/items', addItemHandler);
 router.put('/items/:itemId', updateItemHandler);
 router.delete('/items/:itemId', removeItemHandler);

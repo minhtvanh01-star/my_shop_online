@@ -17,6 +17,7 @@ import productRoutes from './modules/products/products.routes';
 import cartRoutes from './modules/cart/cart.routes';
 import orderRoutes from './modules/orders/orders.routes';
 import paymentRoutes from './modules/payments/payments.routes';
+import { stripeWebhookHandler } from './modules/payments/payments.controller';
 import userRoutes from './modules/users/users.routes';
 import categoryRoutes from './modules/categories/categories.routes';
 import reviewRoutes from './modules/reviews/reviews.routes';
@@ -26,6 +27,7 @@ import pageRoutes from './modules/pages/pages.routes';
 import mediaRoutes from './modules/media/media.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import settingsRoutes from './modules/settings/settings.routes';
+import couponRoutes from './modules/coupons/coupons.routes';
 
 const app: Application = express();
 const V1 = '/api/v1';
@@ -52,8 +54,12 @@ app.use(
   }),
 );
 
-// ── Stripe webhook — raw body, mounted before express.json() ─────────────────
-app.use(`${V1}/payments`, paymentRoutes);
+// ── Stripe webhook — raw body ONLY, before express.json() ────────────────────
+app.post(
+  `${V1}/payments/stripe/webhook`,
+  express.raw({ type: 'application/json' }),
+  stripeWebhookHandler,
+);
 
 // ── Parsing & Utilities ───────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
@@ -75,6 +81,7 @@ app.use(`${V1}/auth`, authRoutes);
 app.use(`${V1}/products`, productRoutes);
 app.use(`${V1}/cart`, cartRoutes);
 app.use(`${V1}/orders`, orderRoutes);
+app.use(`${V1}/payments`, paymentRoutes);
 app.use(`${V1}/users`, userRoutes);
 app.use(`${V1}/categories`, categoryRoutes);
 app.use(`${V1}/reviews`, reviewRoutes);
@@ -84,6 +91,7 @@ app.use(`${V1}/pages`, pageRoutes);
 app.use(`${V1}/media`, mediaRoutes);
 app.use(`${V1}/admin`, adminRoutes);
 app.use(`${V1}/settings`, settingsRoutes);
+app.use(`${V1}/coupons`, couponRoutes);
 
 // ── Error handling ────────────────────────────────────────────────────────────
 app.use(notFoundHandler);

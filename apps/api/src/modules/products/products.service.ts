@@ -73,6 +73,26 @@ export async function getProductBySlug(slug: string, locale: string = 'en') {
   return product;
 }
 
+/** Admin: load by UUID including inactive products (soft-deleted still 404). */
+export async function getAdminProductById(id: string, locale: string = 'en') {
+  const product = await prisma.product.findFirst({
+    where: { id, deletedAt: null },
+    include: {
+      translations: true,
+      images: { orderBy: { sortOrder: 'asc' } },
+      variants: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' } },
+      category: { select: { id: true, slug: true, name: true } },
+      prices: true,
+    },
+  });
+  if (!product) throw new AppError(404, 'Product not found', 'NOT_FOUND');
+  // Prefer requested locale first in translations array for UI convenience
+  const translations = [...product.translations].sort((a, b) =>
+    a.locale === locale ? -1 : b.locale === locale ? 1 : 0,
+  );
+  return { ...product, translations };
+}
+
 export async function createProduct(dto: CreateProductDto, createdBy: string) {
   const { translations, ...productData } = dto;
 

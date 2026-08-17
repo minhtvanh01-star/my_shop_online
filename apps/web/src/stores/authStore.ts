@@ -2,18 +2,21 @@
 
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { readAccessTokenCookie } from '@/lib/auth-cookie';
 import { tokenManager } from '@/lib/api';
 import type { User } from '@/types';
 
 interface AuthState {
   user: User | null;
   accessToken: string | null;
+  refreshToken: string | null;
   _hasHydrated: boolean;
 }
 
 interface AuthActions {
-  setAuth: (user: User, accessToken: string) => void;
+  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
   setAccessToken: (token: string) => void;
+  setRefreshToken: (token: string) => void;
   updateUser: (partial: Partial<User>) => void;
   logout: () => void;
   _setHydrated: () => void;
@@ -26,16 +29,23 @@ export const useAuthStore = create<AuthStore>()(
     (set, get) => ({
       user: null,
       accessToken: null,
+      refreshToken: null,
       _hasHydrated: false,
 
-      setAuth: (user, accessToken) => {
+      setAuth: (user, accessToken, refreshToken) => {
         tokenManager.set(accessToken);
-        set({ user, accessToken });
+        tokenManager.setRefresh(refreshToken);
+        set({ user, accessToken, refreshToken });
       },
 
       setAccessToken: (token) => {
         tokenManager.set(token);
         set({ accessToken: token });
+      },
+
+      setRefreshToken: (token) => {
+        tokenManager.setRefresh(token);
+        set({ refreshToken: token });
       },
 
       updateUser: (partial) => {
@@ -45,7 +55,8 @@ export const useAuthStore = create<AuthStore>()(
 
       logout: () => {
         tokenManager.set(null);
-        set({ user: null, accessToken: null });
+        tokenManager.setRefresh(null);
+        set({ user: null, accessToken: null, refreshToken: null });
       },
 
       _setHydrated: () => set({ _hasHydrated: true }),
@@ -55,23 +66,23 @@ export const useAuthStore = create<AuthStore>()(
       storage: createJSONStorage(() =>
         typeof window !== 'undefined' ? localStorage : memoryStorage(),
       ),
-      // Only persist user data and token — exclude internal state
       partialize: (state) => ({
         user: state.user,
-        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
       }),
       onRehydrateStorage: () => (state) => {
-        if (state) {
-          // Re-sync the token manager after page reload
-          if (state.accessToken) tokenManager.set(state.accessToken);
-          state._setHydrated();
-        }
+        const access = readAccessTokenCookie();
+        if (access) tokenManager.set(access);
+        if (state?.refreshToken) tokenManager.setRefresh(state.refreshToken);
+        useAuthStore.setState({
+          _hasHydrated: true,
+          ...(access ? { accessToken: access } : {}),
+        });
       },
     },
   ),
 );
 
-// ── Selectors ─────────────────────────────────────────────────────────────────
 export const useCurrentUser = () => useAuthStore((s) => s.user);
 export const useIsAuthenticated = () => useAuthStore((s) => s.user !== null);
 export const useIsAdmin = () =>
@@ -80,14 +91,13 @@ export const useIsAdmin = () =>
   );
 export const useHasHydrated = () => useAuthStore((s) => s._hasHydrated);
 
-// ── SSR-safe memory storage fallback ─────────────────────────────────────────
 function memoryStorage(): Storage {
   const store = new Map<string, string>();
   return {
     getItem: (k) => store.get(k) ?? null,
-    setItem: (k, v) => store.set(k, v),
-    removeItem: (k) => store.delete(k),
-    clear: () => store.clear(),
+    setItem: (k, v) => { store.set(k, v); },
+    removeItem: (k) => { store.delete(k); },
+    clear: () => { store.clear(); },
     key: (i) => [...store.keys()][i] ?? null,
     get length() { return store.size; },
   };

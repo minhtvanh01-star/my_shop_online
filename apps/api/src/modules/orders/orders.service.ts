@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../../config/database';
 import { AppError } from '../../middlewares/error.middleware';
+import { settleCodOnDelivered } from '../payments/payments.service';
 import type { AdminOrderListQueryDto, CreateOrderDto, UpdateOrderStatusDto } from './orders.schema';
 
 function generateOrderNumber(): string {
@@ -245,10 +246,7 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
       }
     }
 
-    if (coupon) {
-      await tx.coupon.update({ where: { id: coupon.id }, data: { usedCount: { increment: 1 } } });
-    }
-
+    // Coupon usedCount increments when payment completes (Stripe/VNPay webhook or COD delivery)
     // Clear cart
     await tx.cartItem.deleteMany({ where: { userId } });
 
@@ -370,7 +368,7 @@ export async function updateOrderStatus(orderId: string, dto: UpdateOrderStatusD
     );
   }
 
-  return prisma.order.update({
+  const updated = await prisma.order.update({
     where: { id: orderId },
     data: {
       status: dto.status,
@@ -380,4 +378,10 @@ export async function updateOrderStatus(orderId: string, dto: UpdateOrderStatusD
       ...(dto.status === 'delivered' && { deliveredAt: new Date() }),
     },
   });
+
+  if (dto.status === 'delivered') {
+    await settleCodOnDelivered(orderId);
+  }
+
+  return updated;
 }

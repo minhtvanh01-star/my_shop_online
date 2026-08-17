@@ -4,33 +4,54 @@ import { routing } from './i18n/routing';
 
 const intlMiddleware = createMiddleware(routing);
 
-// Paths that require authentication (after locale prefix stripped)
-const AUTH_REQUIRED = ['/account', '/orders', '/checkout', '/wishlist'];
-const ADMIN_REQUIRED = ['/admin'];
+const PROTECTED_PREFIXES = [
+  '/account',
+  '/tai-khoan',
+  '/orders',
+  '/don-hang',
+  '/checkout',
+  '/thanh-toan',
+  '/wishlist',
+  '/yeu-thich',
+  '/admin',
+];
+
+function stripLocale(pathname: string): string {
+  for (const locale of routing.locales) {
+    if (pathname === `/${locale}`) return '/';
+    if (pathname.startsWith(`/${locale}/`)) {
+      return pathname.slice(locale.length + 1);
+    }
+  }
+  return pathname;
+}
+
+function isProtected(pathnameWithoutLocale: string): boolean {
+  return PROTECTED_PREFIXES.some(
+    (prefix) => pathnameWithoutLocale === prefix || pathnameWithoutLocale.startsWith(`${prefix}/`),
+  );
+}
+
+function loginPath(locale: string): string {
+  const mapped = routing.pathnames['/auth/login'];
+  const slug = typeof mapped === 'string' ? mapped : mapped[locale as 'vi' | 'en'];
+  return `/${locale}${slug}`;
+}
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const pathnameWithoutLocale = stripLocale(pathname);
 
-  // Strip locale prefix to inspect the path
-  const pathnameWithoutLocale = routing.locales.reduce(
-    (acc: string, locale) => acc.replace(new RegExp(`^/${locale}(/|$)`), '/'),
-    pathname,
-  );
-
-  const isAdminPath = ADMIN_REQUIRED.some((p) => pathnameWithoutLocale.startsWith(p));
-  const isAuthPath = AUTH_REQUIRED.some((p) => pathnameWithoutLocale.startsWith(p));
-
-  if (isAdminPath || isAuthPath) {
-    // Read the access token from cookie (set by auth store hydration)
-    // Full auth validation happens server-side in layouts/pages
+  if (isProtected(pathnameWithoutLocale)) {
     const token = request.cookies.get('access-token')?.value;
     if (!token) {
-      const locale = routing.locales.find((l) => pathname.startsWith(`/${l}/`) || pathname === `/${l}`)
+      const locale =
+        routing.locales.find((l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`))
         ?? routing.defaultLocale;
 
-      const loginUrl = new URL(`/${locale}/dang-nhap`, request.url);
-      loginUrl.searchParams.set('redirect', pathname);
-      return NextResponse.redirect(loginUrl);
+      const url = new URL(loginPath(locale), request.url);
+      url.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(url);
     }
   }
 
@@ -38,6 +59,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Skip Next.js internals, static files and API routes
   matcher: ['/((?!api|_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|webp|gif)$).*)'],
 };

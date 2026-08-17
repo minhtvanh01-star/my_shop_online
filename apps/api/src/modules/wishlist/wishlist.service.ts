@@ -1,49 +1,53 @@
 import { prisma } from '../../config/database';
 import { AppError } from '../../middlewares/error.middleware';
+import { resolveLocale } from '../../utils/locale';
 import type { AddToWishlistDto } from './wishlist.schema';
 
-const wishlistItemSelect = {
-  id: true,
-  productId: true,
-  variantId: true,
-  createdAt: true,
-  product: {
-    select: {
-      id: true,
-      slug: true,
-      basePrice: true,
-      currency: true,
-      isActive: true,
-      translations: {
-        where: { locale: 'en' },
-        select: { name: true, locale: true },
-      },
-      images: {
-        where: { isPrimary: true },
-        take: 1,
-        select: { url: true, altText: true },
+function wishlistItemSelect(locale: string) {
+  const resolved = resolveLocale(locale);
+  return {
+    id: true,
+    productId: true,
+    variantId: true,
+    createdAt: true,
+    product: {
+      select: {
+        id: true,
+        slug: true,
+        basePrice: true,
+        currency: true,
+        isActive: true,
+        translations: {
+          where: { locale: resolved },
+          select: { name: true, locale: true },
+        },
+        images: {
+          where: { isPrimary: true },
+          take: 1,
+          select: { url: true, altText: true },
+        },
       },
     },
-  },
-  variant: {
-    select: {
-      id: true,
-      optionName: true,
-      optionValue: true,
-      priceModifier: true,
+    variant: {
+      select: {
+        id: true,
+        optionName: true,
+        optionValue: true,
+        priceModifier: true,
+      },
     },
-  },
-};
+  } as const;
+}
 
-export async function getWishlist(userId: string) {
+export async function getWishlist(userId: string, locale = 'en') {
   return prisma.wishlist.findMany({
     where: { userId },
-    select: wishlistItemSelect,
+    select: wishlistItemSelect(locale),
     orderBy: { createdAt: 'desc' },
   });
 }
 
-export async function addToWishlist(userId: string, productId: string, dto: AddToWishlistDto) {
+export async function addToWishlist(userId: string, productId: string, dto: AddToWishlistDto, locale = 'en') {
   const product = await prisma.product.findFirst({
     where: { id: productId, isActive: true, deletedAt: null },
     select: { id: true },
@@ -68,7 +72,7 @@ export async function addToWishlist(userId: string, productId: string, dto: AddT
 
   return prisma.wishlist.create({
     data: { userId, productId, variantId },
-    select: wishlistItemSelect,
+    select: wishlistItemSelect(locale),
   });
 }
 

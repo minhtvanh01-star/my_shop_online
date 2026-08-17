@@ -1,0 +1,13 @@
+---
+description: Express module conventions for the My Shop Online API.
+globs: apps/api/**/*.ts
+alwaysApply: false
+---
+
+# API modules
+
+- Layer: `schema.ts` (Zod) → `service.ts` (Prisma + `AppError`) → `controller.ts` (`ok`/`created`/`paginated`) → `routes.ts`.
+- Never import Prisma in controllers. Never use `process.env` — use `config/env.ts`.
+- Roles: `SUPER_ADMIN` | `ADMIN` | `WAREHOUSE` | `SUPPORT` | `CONTENT` | `CUSTOMER`.
+- Stripe webhook: raw body only on that route, before `express.json()`.
+- Remaining gaps: `.cursor/skills/my-shop-api-gaps/SKILL.md`.

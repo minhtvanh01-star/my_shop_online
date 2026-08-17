@@ -1,0 +1,11 @@
+---
+description: Next work phase, design system, and where specs live. Always on for this repo.
+alwaysApply: true
+---
+
+# My Shop Online — session defaults
+
+- **Phase:** storefront UI (API is mounted; pages are stubs). Next slice order is in `.cursor/skills/my-shop-roadmap/SKILL.md` and `docs/09-tien-do-va-backlog.md`.
+- **UI:** read `design-system/my-shop-online/MASTER.md` plus `pages/<page>.md`. Skill: `my-shop-storefront-ui`.
+- **API gaps:** skill `my-shop-api-gaps`. Specs: `docs/01`–`docs/08`.
+- **Do not** start a new marketing landing pattern or a second design system. One slice per change.

@@ -43,24 +43,21 @@ apps/api/src/
 
 ## Implemented Modules
 
-| Module     | Routes | Controller | Service | Schema | Mounted |
-|------------|:------:|:----------:|:-------:|:------:|:-------:|
-| auth       | ✅     | ✅         | ✅      | ✅     | ❌      |
-| users      | ✅     | ❌         | ❌      | ❌     | ❌      |
-| products   | ✅     | ✅         | ✅      | ✅     | ❌      |
-| categories | ✅     | ❌         | ❌      | ❌     | ❌      |
-| orders     | ✅     | ❌         | ❌      | ✅     | ❌      |
-| cart       | ✅     | ✅         | ✅      | ✅     | ❌      |
-| payments   | ✅     | ❌         | ❌      | ❌     | ❌      |
-| reviews    | ✅     | ❌         | ❌      | ❌     | ❌      |
-| wishlist   | ✅     | ❌         | ❌      | ❌     | ❌      |
-| blog       | ✅     | ❌         | ❌      | ❌     | ❌      |
-| pages      | ✅     | ❌         | ❌      | ❌     | ❌      |
-| media      | ✅     | ❌         | ❌      | ❌     | ❌      |
-| admin      | ✅     | ❌         | ❌      | ❌     | ❌      |
-| settings   | ✅     | ❌         | ❌      | ❌     | ❌      |
+All of the following are **mounted** in `apps/api/src/app.ts` (schema + controller + service + routes):
 
-To mount a module, uncomment its import + `app.use()` in `app.ts`.
+auth, users, products, categories, cart, orders, payments, reviews, wishlist, blog, pages, media, admin, settings.
+
+Remaining API gaps and frontend backlog: `docs/09-tien-do-va-backlog.md`.
+
+## Frontend
+
+- App: `apps/web/` — Next.js 14 App Router, next-intl (`vi`/`en`), shadcn, Zustand, TanStack Query
+- Design system: `design-system/my-shop-online/MASTER.md` (page overrides in `pages/`)
+- **Phase:** storefront UI. Pages exist as stubs; Header/Footer and auth pages are missing.
+
+## Next work
+
+Follow `.cursor/skills/my-shop-roadmap/SKILL.md`. Do not treat this file’s older “unmounted” notes as current.
 
 ## Coding Conventions
 

@@ -1,60 +1,86 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { clearAccessTokenCookie, setAccessTokenCookie } from '@/lib/auth-cookie';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api/v1';
 
-// ── Token manager ─────────────────────────────────────────────────────────────
-// Kept in module scope so the axios interceptor can access it without
-// importing from the Zustand store (prevents circular dependency).
 let _token: string | null = null;
+let _refreshToken: string | null = null;
 let _refreshPromise: Promise<string> | null = null;
 
 export const tokenManager = {
   get: () => _token,
+  getRefresh: () => _refreshToken,
   set: (token: string | null) => {
     _token = token;
+    if (typeof document === 'undefined') return;
+    if (token) setAccessTokenCookie(token);
+    else clearAccessTokenCookie();
+  },
+  setRefresh: (token: string | null) => {
+    _refreshToken = token;
   },
 };
 
-// ── Axios instance ────────────────────────────────────────────────────────────
 export const api = axios.create({
   baseURL: BASE_URL,
-  withCredentials: true, // sends httpOnly refresh-token cookie
+  withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
   timeout: 15_000,
 });
 
-// Attach access token to outgoing requests
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = tokenManager.get();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// On 401: attempt one silent token refresh, then retry the original request
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     const is401 = error.response?.status === 401;
-    const isRefreshCall = original?.url?.includes('/auth/refresh');
+    const isAuthHandshake =
+      original?.url?.includes('/auth/refresh') ||
+      original?.url?.includes('/auth/login') ||
+      original?.url?.includes('/auth/register');
 
-    if (!is401 || original?._retry || isRefreshCall) {
+    if (!is401 || original?._retry || isAuthHandshake) {
       return Promise.reject(error);
     }
 
     original._retry = true;
+    const refreshToken = tokenManager.getRefresh();
+    if (!refreshToken) {
+      tokenManager.set(null);
+      tokenManager.setRefresh(null);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:session-expired'));
+      }
+      return Promise.reject(error);
+    }
 
     try {
-      // Deduplicate: if a refresh is already in-flight, share the same promise
       if (!_refreshPromise) {
         _refreshPromise = axios
-          .post<{ data: { accessToken: string } }>(
+          .post<{ data: { accessToken: string; refreshToken?: string } }>(
             `${BASE_URL}/auth/refresh`,
-            {},
+            { refreshToken },
             { withCredentials: true },
           )
-          .then((res) => res.data.data.accessToken)
+          .then((res) => {
+            const nextAccess = res.data.data.accessToken;
+            const nextRefresh = res.data.data.refreshToken;
+            if (nextRefresh) tokenManager.setRefresh(nextRefresh);
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(
+                new CustomEvent('auth:tokens-refreshed', {
+                  detail: { accessToken: nextAccess, refreshToken: nextRefresh },
+                }),
+              );
+            }
+            return nextAccess;
+          })
           .finally(() => {
             _refreshPromise = null;
           });
@@ -66,7 +92,7 @@ api.interceptors.response.use(
       return api(original);
     } catch {
       tokenManager.set(null);
-      // Notify the app so it can redirect to login
+      tokenManager.setRefresh(null);
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('auth:session-expired'));
       }
@@ -75,7 +101,6 @@ api.interceptors.response.use(
   },
 );
 
-// ── Typed helpers ─────────────────────────────────────────────────────────────
 export interface ApiResponse<T> {
   data: T;
 }
@@ -98,6 +123,13 @@ export function getApiError(err: unknown): string {
   }
   if (err instanceof Error) return err.message;
   return 'An unexpected error occurred';
+}
+
+export function getApiErrorCode(err: unknown): string | undefined {
+  if (axios.isAxiosError(err)) {
+    return (err.response?.data as { code?: string })?.code;
+  }
+  return undefined;
 }
 
 export default api;
