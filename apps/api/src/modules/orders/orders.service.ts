@@ -2,8 +2,20 @@ import { Prisma } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../../config/database';
 import { AppError } from '../../middlewares/error.middleware';
-import { settleCodOnDelivered } from '../payments/payments.service';
-import type { AdminOrderListQueryDto, CreateOrderDto, UpdateOrderStatusDto } from './orders.schema';
+import { convertCatalogAmount, resolveOrderCurrency } from '../../utils/exchange';
+import { getUsdToVndRate } from '../../utils/exchange-rate';
+import { settleCodOnDelivered, refundPayment } from '../payments/payments.service';
+import { notifyIfLowStock } from '../inventory/inventory.service';
+import { isWarehouseRole, WAREHOUSE_ORDER_STATUSES } from '../auth/auth.roles';
+import { canCreateReturnRequest } from '../../utils/order-return';
+import type {
+  AdminOrderListQueryDto,
+  CreateOrderDto,
+  CreateReturnRequestDto,
+  ReviewReturnRequestDto,
+  UpdateOrderStatusDto,
+  UserOrderListQueryDto,
+} from './orders.schema';
 
 function generateOrderNumber(): string {
   const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -40,11 +52,24 @@ const orderSelect = {
   createdAt: true,
   orderItems: { select: orderItemSelect },
   payments: { select: { id: true, provider: true, status: true, amount: true, paidAt: true } },
+  returnRequests: {
+    select: {
+      id: true,
+      type: true,
+      status: true,
+      reason: true,
+      adminNote: true,
+      createdAt: true,
+      reviewedAt: true,
+    },
+    orderBy: { createdAt: 'desc' as const },
+  },
 };
 
-export async function getUserOrders(userId: string, page: number, limit: number) {
+export async function getUserOrders(userId: string, query: UserOrderListQueryDto) {
+  const { page, limit, status } = query;
   const skip = (page - 1) * limit;
-  const where: Prisma.OrderWhereInput = { userId };
+  const where: Prisma.OrderWhereInput = { userId, ...(status ? { status } : {}) };
 
   const [total, items] = await prisma.$transaction([
     prisma.order.count({ where }),
@@ -55,16 +80,23 @@ export async function getUserOrders(userId: string, page: number, limit: number)
 }
 
 export async function getOrderById(id: string, userId?: string, role?: string) {
-  const isAdmin = role && ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(role);
+  const isStaffOps = role && ['ADMIN', 'SUPER_ADMIN', 'SUPPORT', 'WAREHOUSE'].includes(role);
   const order = await prisma.order.findFirst({
-    where: { id, ...(!isAdmin && userId && { userId }) },
+    where: { id, ...(!isStaffOps && userId && { userId }) },
     include: {
       orderItems: true,
       payments: true,
       orderCoupons: { include: { coupon: { select: { code: true, type: true, value: true } } } },
+      returnRequests: { orderBy: { createdAt: 'desc' as const } },
     },
   });
   if (!order) throw new AppError(404, 'Order not found', 'NOT_FOUND');
+  if (isWarehouseRole(role)) {
+    if (!(WAREHOUSE_ORDER_STATUSES as readonly string[]).includes(order.status)) {
+      throw new AppError(404, 'Order not found', 'NOT_FOUND');
+    }
+    return stripWarehouseFinance(order as unknown as Record<string, unknown>);
+  }
   return order;
 }
 
@@ -123,15 +155,32 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
     // BR-C01 step 5: minimum order amount (checked after subtotal is computed below)
   }
 
-  const subtotal = cartItems.reduce((sum, item) => {
-    const base = Number(item.product.basePrice);
-    const modifier = item.variant ? Number(item.variant.priceModifier) : 0;
-    return sum + (base + modifier) * item.quantity;
-  }, 0);
+  const orderCurrency = resolveOrderCurrency(dto.locale, dto.currency);
+  const exchangeRate = orderCurrency === 'VND' ? await getUsdToVndRate() : 1;
 
-  // BR-C01 step 5: minimum order amount
+  const pricedLines = cartItems.map((item) => {
+    const catalogUnit =
+      Number(item.product.basePrice) + (item.variant ? Number(item.variant.priceModifier) : 0);
+    const unitPrice = convertCatalogAmount(
+      catalogUnit,
+      item.product.currency,
+      orderCurrency,
+      exchangeRate,
+    );
+    return { item, unitPrice, lineTotal: unitPrice * item.quantity };
+  });
+
+  const subtotal = pricedLines.reduce((sum, line) => sum + line.lineTotal, 0);
+
+  // BR-C01 step 5: minimum order amount (coupon floors are stored in USD)
   if (coupon?.minOrderAmount !== null && coupon?.minOrderAmount !== undefined) {
-    if (subtotal < Number(coupon.minOrderAmount)) {
+    const minInOrderCurrency = convertCatalogAmount(
+      Number(coupon.minOrderAmount),
+      'USD',
+      orderCurrency,
+      exchangeRate,
+    );
+    if (subtotal < minInOrderCurrency) {
       throw new AppError(
         400,
         `Order must be at least ${coupon.minOrderAmount} to use this coupon`,
@@ -142,13 +191,18 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
 
   let discountAmount = 0;
   if (coupon) {
-    discountAmount =
-      coupon.type === 'percentage'
-        ? (subtotal * Number(coupon.value)) / 100
-        : Math.min(Number(coupon.value), subtotal);
+    if (coupon.type === 'percentage') {
+      const percent = Math.min(Math.max(Number(coupon.value), 0), 100);
+      discountAmount = (subtotal * percent) / 100;
+    } else {
+      discountAmount = Math.min(
+        convertCatalogAmount(Number(coupon.value), 'USD', orderCurrency, exchangeRate),
+        subtotal,
+      );
+    }
   }
 
-  const totalAmount = subtotal - discountAmount;
+  const totalAmount = Math.max(subtotal - discountAmount, 0);
   const orderNumber = generateOrderNumber();
 
   const order = await prisma.$transaction(async (tx) => {
@@ -156,7 +210,8 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
       data: {
         orderNumber,
         userId,
-        currency: dto.currency,
+        currency: orderCurrency,
+        exchangeRate,
         subtotal,
         discountAmount,
         totalAmount,
@@ -165,7 +220,7 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
         notes: dto.notes,
         shippingMethodId: dto.shippingMethodId,
         orderItems: {
-          create: cartItems.map((item) => ({
+          create: pricedLines.map(({ item, unitPrice, lineTotal }) => ({
             productId: item.productId,
             variantId: item.variantId,
             productName: item.product.translations[0]?.name ?? item.product.sku,
@@ -174,10 +229,9 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
               : null,
             sku: item.variant?.sku ?? item.product.sku,
             quantity: item.quantity,
-            unitPrice: Number(item.product.basePrice) + (item.variant ? Number(item.variant.priceModifier) : 0),
-            totalPrice:
-              (Number(item.product.basePrice) + (item.variant ? Number(item.variant.priceModifier) : 0)) * item.quantity,
-            currency: dto.currency,
+            unitPrice,
+            totalPrice: lineTotal,
+            currency: orderCurrency,
             productSnapshot: item.product as Prisma.InputJsonValue,
           })),
         },
@@ -253,6 +307,24 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
     return created;
   });
 
+  await Promise.all(
+    order.orderItems.map(async (item) => {
+      if (item.variantId) {
+        const variant = await prisma.productVariant.findUnique({
+          where: { id: item.variantId },
+          select: { stockQuantity: true },
+        });
+        if (variant) await notifyIfLowStock(item.productId, item.variantId, variant.stockQuantity);
+        return;
+      }
+      const product = await prisma.product.findUnique({
+        where: { id: item.productId },
+        select: { stockQuantity: true },
+      });
+      if (product) await notifyIfLowStock(item.productId, null, product.stockQuantity);
+    }),
+  );
+
   return order;
 }
 
@@ -266,7 +338,62 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   refunded: [],
 };
 
-export async function cancelOrder(orderId: string, actorId: string, role: string) {
+async function restockOrderLines(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+  actorId: string,
+  items: { productId: string; variantId: string | null; quantity: number }[],
+) {
+  for (const item of items) {
+    const product = await tx.product.findUnique({
+      where: { id: item.productId },
+      select: { stockQuantity: true },
+    });
+
+    if (item.variantId) {
+      const variant = await tx.productVariant.findUnique({
+        where: { id: item.variantId },
+        select: { stockQuantity: true },
+      });
+      if (variant) {
+        await tx.productVariant.update({
+          where: { id: item.variantId },
+          data: { stockQuantity: { increment: item.quantity } },
+        });
+        await tx.inventoryTransaction.create({
+          data: {
+            productId: item.productId,
+            variantId: item.variantId,
+            orderId,
+            actorId,
+            type: 'return',
+            quantityChange: item.quantity,
+            quantityBefore: variant.stockQuantity,
+            quantityAfter: variant.stockQuantity + item.quantity,
+          },
+        });
+      }
+    } else if (product) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stockQuantity: { increment: item.quantity } },
+      });
+      await tx.inventoryTransaction.create({
+        data: {
+          productId: item.productId,
+          orderId,
+          actorId,
+          type: 'return',
+          quantityChange: item.quantity,
+          quantityBefore: product.stockQuantity,
+          quantityAfter: product.stockQuantity + item.quantity,
+        },
+      });
+    }
+  }
+}
+
+export async function cancelOrder(orderId: string, actorId: string, role: string, reason?: string) {
   const isAdmin = ['ADMIN', 'SUPER_ADMIN', 'SUPPORT'].includes(role);
 
   const order = await prisma.order.findFirst({
@@ -280,65 +407,75 @@ export async function cancelOrder(orderId: string, actorId: string, role: string
     throw new AppError(400, 'Order cannot be cancelled at this stage', 'ORDER_CANNOT_CANCEL');
   }
 
+  const notes = reason
+    ? [order.notes, `Cancel: ${reason}`].filter(Boolean).join('\n')
+    : order.notes;
+
   await prisma.$transaction(async (tx) => {
-    await tx.order.update({ where: { id: orderId }, data: { status: 'cancelled' } });
-
-    for (const item of order.orderItems) {
-      const product = await tx.product.findUnique({
-        where: { id: item.productId },
-        select: { stockQuantity: true },
-      });
-
-      if (item.variantId) {
-        const variant = await tx.productVariant.findUnique({
-          where: { id: item.variantId },
-          select: { stockQuantity: true },
-        });
-        if (variant) {
-          await tx.productVariant.update({
-            where: { id: item.variantId },
-            data: { stockQuantity: { increment: item.quantity } },
-          });
-          await tx.inventoryTransaction.create({
-            data: {
-              productId: item.productId,
-              variantId: item.variantId,
-              orderId,
-              actorId,
-              type: 'return',
-              quantityChange: item.quantity,
-              quantityBefore: variant.stockQuantity,
-              quantityAfter: variant.stockQuantity + item.quantity,
-            },
-          });
-        }
-      } else if (product) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stockQuantity: { increment: item.quantity } },
-        });
-        await tx.inventoryTransaction.create({
-          data: {
-            productId: item.productId,
-            orderId,
-            actorId,
-            type: 'return',
-            quantityChange: item.quantity,
-            quantityBefore: product.stockQuantity,
-            quantityAfter: product.stockQuantity + item.quantity,
-          },
-        });
-      }
-    }
+    await tx.order.update({ where: { id: orderId }, data: { status: 'cancelled', notes } });
+    await restockOrderLines(tx, orderId, actorId, order.orderItems);
   });
 }
 
-export async function getAdminOrders(query: AdminOrderListQueryDto) {
+const WAREHOUSE_TRANSITIONS: Record<string, string[]> = {
+  confirmed: ['processing'],
+  processing: ['shipped'],
+};
+
+function stripWarehouseFinance<T extends Record<string, unknown>>(order: T) {
+  const {
+    totalAmount: _t,
+    subtotal: _s,
+    discountAmount: _d,
+    taxAmount: _x,
+    shippingFee: _f,
+    payments: _p,
+    orderCoupons: _c,
+    orderItems,
+    ...rest
+  } = order as T & {
+    totalAmount?: unknown;
+    subtotal?: unknown;
+    discountAmount?: unknown;
+    taxAmount?: unknown;
+    shippingFee?: unknown;
+    payments?: unknown;
+    orderItems?: Array<Record<string, unknown>>;
+  };
+  return {
+    ...rest,
+    ...(orderItems
+      ? {
+          orderItems: orderItems.map((item) => {
+            const { unitPrice: _u, totalPrice: _tp, ...line } = item;
+            return line;
+          }),
+        }
+      : {}),
+  };
+}
+
+export async function getAdminOrders(
+  query: AdminOrderListQueryDto,
+  role?: string,
+): Promise<{ items: unknown[]; total: number; page: number; limit: number }> {
   const { page, limit, status, userId, search } = query;
   const skip = (page - 1) * limit;
 
+  const warehouseOnly = isWarehouseRole(role);
+  if (
+    warehouseOnly &&
+    status &&
+    !(WAREHOUSE_ORDER_STATUSES as readonly string[]).includes(status)
+  ) {
+    return { items: [], total: 0, page, limit };
+  }
+  const statusFilter = warehouseOnly
+    ? status ?? { in: [...WAREHOUSE_ORDER_STATUSES] }
+    : status;
+
   const where: Prisma.OrderWhereInput = {
-    ...(status && { status }),
+    ...(statusFilter ? { status: statusFilter } : {}),
     ...(userId && { userId }),
     ...(search && {
       OR: [
@@ -352,36 +489,200 @@ export async function getAdminOrders(query: AdminOrderListQueryDto) {
     prisma.order.findMany({ where, skip, take: limit, select: orderSelect, orderBy: { createdAt: 'desc' } }),
   ]);
 
-  return { items, total, page, limit };
+  return {
+    items: isWarehouseRole(role) ? items.map((row) => stripWarehouseFinance(row)) : [...items],
+    total,
+    page,
+    limit,
+  };
 }
 
-export async function updateOrderStatus(orderId: string, dto: UpdateOrderStatusDto, processedBy: string) {
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) throw new AppError(404, 'Order not found', 'ORDER_NOT_FOUND');
-
-  const allowed = VALID_TRANSITIONS[order.status] ?? [];
-  if (!allowed.includes(dto.status)) {
-    throw new AppError(
-      400,
-      `Cannot transition order from '${order.status}' to '${dto.status}'`,
-      'INVALID_STATUS_TRANSITION',
-    );
+export async function updateOrderStatus(
+  orderId: string,
+  dto: UpdateOrderStatusDto,
+  processedBy: string,
+  role?: string,
+) {
+  if (dto.status === 'refunded') {
+    if (isWarehouseRole(role)) {
+      throw new AppError(403, 'Warehouse cannot refund orders', 'FORBIDDEN');
+    }
+    const payment = await prisma.payment.findFirst({
+      where: { orderId, status: 'completed' },
+      select: { id: true },
+    });
+    if (payment) {
+      await refundPayment(payment.id, { reason: 'Admin status refund' }, processedBy);
+      return getOrderById(orderId, processedBy, role);
+    }
   }
 
-  const updated = await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      status: dto.status,
-      processedBy,
-      ...(dto.trackingNumber && { trackingNumber: dto.trackingNumber }),
-      ...(dto.status === 'shipped' && { shippedAt: new Date() }),
-      ...(dto.status === 'delivered' && { deliveredAt: new Date() }),
-    },
+  const updated = await prisma.$transaction(async (tx) => {
+    const current = await tx.order.findUnique({
+      where: { id: orderId },
+      include: { orderItems: true },
+    });
+    if (!current) throw new AppError(404, 'Order not found', 'ORDER_NOT_FOUND');
+
+    if (
+      isWarehouseRole(role) &&
+      dto.status === 'shipped' &&
+      !dto.trackingNumber?.trim() &&
+      !current.trackingNumber
+    ) {
+      throw new AppError(400, 'Tracking number is required', 'TRACKING_REQUIRED');
+    }
+
+    const allowed = isWarehouseRole(role)
+      ? (WAREHOUSE_TRANSITIONS[current.status] ?? [])
+      : (VALID_TRANSITIONS[current.status] ?? []);
+    if (!allowed.includes(dto.status)) {
+      throw new AppError(
+        400,
+        `Cannot transition order from '${current.status}' to '${dto.status}'`,
+        'INVALID_STATUS_TRANSITION',
+      );
+    }
+
+    if (dto.status === 'shipped' && !dto.trackingNumber && !current.trackingNumber) {
+      throw new AppError(400, 'Tracking number is required when shipping', 'TRACKING_REQUIRED');
+    }
+
+    const next = await tx.order.update({
+      where: { id: orderId },
+      data: {
+        status: dto.status,
+        processedBy,
+        ...(dto.trackingNumber && { trackingNumber: dto.trackingNumber }),
+        ...(dto.status === 'shipped' && { shippedAt: new Date() }),
+        ...(dto.status === 'delivered' && { deliveredAt: new Date() }),
+      },
+    });
+
+    if (dto.status === 'cancelled' || dto.status === 'refunded') {
+      await restockOrderLines(tx, orderId, processedBy, current.orderItems);
+    }
+
+    return next;
   });
 
   if (dto.status === 'delivered') {
     await settleCodOnDelivered(orderId);
   }
 
-  return updated;
+  return isWarehouseRole(role) ? stripWarehouseFinance(updated) : updated;
+}
+
+const returnSelect = {
+  id: true,
+  orderId: true,
+  type: true,
+  status: true,
+  reason: true,
+  adminNote: true,
+  createdAt: true,
+  reviewedAt: true,
+} as const;
+
+export async function createReturnRequest(
+  orderId: string,
+  userId: string,
+  dto: CreateReturnRequestDto,
+) {
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, userId },
+    include: { returnRequests: { select: { status: true } } },
+  });
+  if (!order) throw new AppError(404, 'Order not found', 'ORDER_NOT_FOUND');
+
+  const hasOpenRequest = order.returnRequests.some((row) =>
+    ['pending', 'approved'].includes(row.status),
+  );
+  if (
+    !canCreateReturnRequest({
+      orderStatus: order.status,
+      deliveredAt: order.deliveredAt,
+      hasOpenRequest,
+    })
+  ) {
+    throw new AppError(
+      400,
+      'Return is only available within 7 days of delivery',
+      'RETURN_NOT_ALLOWED',
+    );
+  }
+
+  return prisma.orderReturnRequest.create({
+    data: {
+      orderId,
+      userId,
+      type: dto.type,
+      reason: dto.reason.trim(),
+    },
+    select: returnSelect,
+  });
+}
+
+export async function reviewReturnRequest(
+  orderId: string,
+  returnId: string,
+  dto: ReviewReturnRequestDto,
+  actorId: string,
+  role: string,
+) {
+  const request = await prisma.orderReturnRequest.findFirst({
+    where: { id: returnId, orderId },
+  });
+  if (!request) throw new AppError(404, 'Return request not found', 'RETURN_NOT_FOUND');
+  if (request.status !== 'pending') {
+    throw new AppError(400, 'Return request already reviewed', 'RETURN_ALREADY_REVIEWED');
+  }
+
+  if (dto.status === 'approved' && request.type === 'refund' && !['ADMIN', 'SUPER_ADMIN'].includes(role)) {
+    throw new AppError(403, 'Only admin can approve refunds', 'FORBIDDEN');
+  }
+
+  if (dto.status === 'rejected') {
+    return prisma.orderReturnRequest.update({
+      where: { id: returnId },
+      data: {
+        status: 'rejected',
+        adminNote: dto.adminNote?.trim() || null,
+        reviewedBy: actorId,
+        reviewedAt: new Date(),
+      },
+      select: returnSelect,
+    });
+  }
+
+  if (request.type === 'refund') {
+    const payment = await prisma.payment.findFirst({
+      where: { orderId, status: 'completed' },
+      select: { id: true },
+    });
+    if (payment) {
+      await refundPayment(payment.id, { reason: request.reason }, actorId);
+    } else {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { orderItems: true },
+      });
+      if (!order) throw new AppError(404, 'Order not found', 'ORDER_NOT_FOUND');
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({ where: { id: orderId }, data: { status: 'refunded' } });
+        await restockOrderLines(tx, orderId, actorId, order.orderItems);
+      });
+    }
+  }
+
+  return prisma.orderReturnRequest.update({
+    where: { id: returnId },
+    data: {
+      status: 'completed',
+      adminNote: dto.adminNote?.trim() || null,
+      reviewedBy: actorId,
+      reviewedAt: new Date(),
+    },
+    select: returnSelect,
+  });
 }
