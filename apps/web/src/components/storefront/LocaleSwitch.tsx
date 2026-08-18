@@ -28,6 +28,7 @@ export function LocaleSwitch() {
             )
           }
           aria-pressed={locale === code}
+          aria-label={code === 'vi' ? 'Tiếng Việt · VND' : 'English · USD'}
         >
           {code}
         </button>

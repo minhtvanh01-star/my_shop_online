@@ -1,10 +1,13 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
+import { CheckoutLink } from '@/components/storefront/CheckoutLink';
+import { useShopSettings } from '@/components/storefront/ShopSettingsProvider';
 import { ctaClassName } from '@/lib/brand';
-import { formatMoney } from '@/lib/format-money';
+import { formatDisplayPrice } from '@/lib/display-price';
 import { useRemoveCartItem, useUpdateCartQuantity } from '@/hooks/useCart';
 import { useCartItems, useCartStore, useCartTotal } from '@/stores/cartStore';
 
@@ -19,7 +22,25 @@ export function CartDrawer() {
   const setOpen = useCartStore((s) => s.setOpen);
   const updateCart = useUpdateCartQuantity();
   const removeCart = useRemoveCartItem();
-  const currency = items[0]?.currency ?? (locale === 'vi' ? 'VND' : 'USD');
+  const { usdToVnd } = useShopSettings();
+  const panelRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isOpen, setOpen]);
 
   if (!isOpen) return null;
 
@@ -32,6 +53,7 @@ export function CartDrawer() {
         onClick={() => setOpen(false)}
       />
       <aside
+        ref={panelRef}
         className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-none"
         role="dialog"
         aria-modal="true"
@@ -42,10 +64,11 @@ export function CartDrawer() {
             {nav('cart')}
           </h2>
           <button
+            ref={closeButtonRef}
             type="button"
-            className="flex h-11 w-11 cursor-pointer items-center justify-center"
+            className="flex h-11 w-11 cursor-pointer items-center justify-center outline-none focus-visible:ring-2 focus-visible:ring-[#059669]"
             onClick={() => setOpen(false)}
-            aria-label={nav('cart')}
+            aria-label={common('close')}
           >
             <X size={20} aria-hidden="true" />
           </button>
@@ -74,13 +97,14 @@ export function CartDrawer() {
                     {item.variantLabel ? (
                       <p className="text-xs text-[#475569]">{item.variantLabel}</p>
                     ) : null}
-                    <p className="text-sm">{formatMoney(item.price, item.currency, locale)}</p>
+                    <p className="text-sm">{formatDisplayPrice(item.price, locale, usdToVnd)}</p>
                     <div className="mt-1 flex items-center gap-2">
                       <button
                         type="button"
                         className="h-8 w-8 cursor-pointer border border-[#E2E8F0]"
+                        disabled={updateCart.isPending}
                         onClick={() => updateCart.mutate({ cartItemId: item.cartItemId, quantity: item.quantity - 1 })}
-                        aria-label="-"
+                        aria-label={t('decreaseQuantity')}
                       >
                         −
                       </button>
@@ -88,14 +112,16 @@ export function CartDrawer() {
                       <button
                         type="button"
                         className="h-8 w-8 cursor-pointer border border-[#E2E8F0]"
+                        disabled={updateCart.isPending}
                         onClick={() => updateCart.mutate({ cartItemId: item.cartItemId, quantity: item.quantity + 1 })}
-                        aria-label="+"
+                        aria-label={t('increaseQuantity')}
                       >
                         +
                       </button>
                       <button
                         type="button"
                         className="ml-auto cursor-pointer text-xs text-[#DC2626]"
+                        disabled={removeCart.isPending}
                         onClick={() => removeCart.mutate(item.cartItemId)}
                       >
                         {t('remove')}
@@ -110,15 +136,16 @@ export function CartDrawer() {
         <div className="border-t border-[#E2E8F0] p-4">
           <div className="mb-3 flex justify-between text-sm">
             <span>{t('subtotal')}</span>
-            <span>{formatMoney(total, currency, locale)}</span>
+            <span>{formatDisplayPrice(total, locale, usdToVnd)}</span>
           </div>
           <Link
-            href="/checkout"
-            className={`${ctaClassName} w-full`}
+            href="/cart"
+            className="mb-2 block text-center text-sm text-[#059669] underline"
             onClick={() => setOpen(false)}
           >
-            {t('checkout')}
+            {t('viewCart')}
           </Link>
+          <CheckoutLink className={`${ctaClassName} w-full`} onNavigate={() => setOpen(false)} />
         </div>
       </aside>
     </div>
