@@ -45,7 +45,7 @@ apps/api/src/
 
 All of the following are **mounted** in `apps/api/src/app.ts` (schema + controller + service + routes):
 
-auth, users, products, categories, cart, orders, payments, reviews, wishlist, blog, pages, media, admin, settings.
+auth, users, products, categories, cart, orders, payments, reviews, wishlist, blog, pages, media, admin, settings, inventory.
 
 Remaining API gaps and frontend backlog: `docs/09-tien-do-va-backlog.md`.
 
@@ -53,7 +53,7 @@ Remaining API gaps and frontend backlog: `docs/09-tien-do-va-backlog.md`.
 
 - App: `apps/web/` — Next.js 14 App Router, next-intl (`vi`/`en`), shadcn, Zustand, TanStack Query
 - Design system: `design-system/my-shop-online/MASTER.md` (page overrides in `pages/`)
-- **Phase:** storefront UI. Pages exist as stubs; Header/Footer and auth pages are missing.
+- **Phase:** storefront UI is wired (auth, chrome, catalog, checkout). Not production-sellable for VN yet — see `docs/09-tien-do-va-backlog.md`.
 
 ## Next work
 

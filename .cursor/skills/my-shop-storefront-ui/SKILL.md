@@ -19,7 +19,7 @@ description: Implements My Shop Online storefront and admin UI with the persiste
 
 ## Must
 
-- Rubik + Nunito Sans. Do not keep Inter.
+- Roboto (latin + latin-ext + vietnamese). Do not keep Inter.
 - Storefront page background white. CTA `#EA580C` with black label.
 - Hero: brand + one headline + one sentence + CTA + full-bleed product image. No hero cards or overlay chips.
 - Checkout: 4 named steps + error summary after failed submit + inline `aria-describedby`.

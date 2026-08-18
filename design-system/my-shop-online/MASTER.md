@@ -40,14 +40,14 @@
 
 ### Typography
 
-- **Heading Font:** Rubik
-- **Body Font:** Nunito Sans
+- **Heading Font:** Roboto (500/700)
+- **Body Font:** Roboto (400/500)
 - **Mood:** ecommerce, clean, shopping, product, retail, conversion
-- **Google Fonts:** [Rubik + Nunito Sans](https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&display=swap)
+- **Google Fonts:** [Roboto](https://fonts.google.com/specimen/Roboto) — subsets `latin`, `latin-ext`, `vietnamese`
 
 **CSS Import:**
 ```css
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;500;600;700&family=Rubik:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap');
 ```
 
 ### Spacing Variables
@@ -243,6 +243,6 @@ UI-UX Pro Max picked **Vibrant & Block-based** + **Feature-Rich Showcase**. For 
 - **Page background is white (`#FFFFFF`),** not mint wash `#ECFDF5`. Mint/green is for success, in-stock, and primary actions — not the canvas.
 - **CTA:** use accent `#EA580C` with **black** label (`--color-on-accent`) so contrast holds. Do not use white-on-orange.
 - **Icons:** Lucide (`lucide-react`) — already in `apps/web`. One stroke style. No emoji icons.
-- **Fonts:** Rubik (headings) + Nunito Sans (body). Do not keep Inter.
+- **Fonts:** Roboto (latin + latin-ext + vietnamese) for headings and body. Do not keep Inter.
 - **Motion:** product-grid stagger is OK; skip `back.out` on tables/checkout. Honor `prefers-reduced-motion`.
 - **Stack:** Next.js App Router + next-intl + shadcn/ui + TanStack Query. Admin tables use shadcn **Table** / **DataTable**, not div-grids.

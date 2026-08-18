@@ -7,7 +7,7 @@ alwaysApply: false
 # Web UI
 
 - Read `design-system/my-shop-online/MASTER.md` and the matching `pages/*.md` before adding UI.
-- Fonts: Rubik + Nunito Sans. Icons: Lucide. CTA: `#EA580C` on black text. Page bg: white.
+- Fonts: Roboto (latin + latin-ext + vietnamese). Icons: Lucide. CTA: `#EA580C` on black text. Page bg: white.
 - i18n: `next-intl` pathnames in `src/i18n/routing.ts`; copy in `messages/vi.json` and `en.json`.
 - Controllers live on the API — this app only calls `src/lib/api.ts`.
 - Auth pages belong at `src/app/[locale]/(storefront)/auth/login` and `auth/register`.

@@ -7,4 +7,4 @@
 - Storefront: `.cursor/skills/my-shop-storefront-ui/SKILL.md`
 - API gaps: `.cursor/skills/my-shop-api-gaps/SKILL.md`
 
-Phase: **storefront UI**. Do not start a new landing-page design system.
+Phase: **storefront wired; fix selling blockers before CMS/SSO**. Completeness: `docs/09`. Do not start a new landing-page design system.
