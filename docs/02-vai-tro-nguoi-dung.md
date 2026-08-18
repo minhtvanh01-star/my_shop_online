@@ -3,9 +3,11 @@
 | Thông tin | Chi tiết |
 |-----------|----------|
 | **Tên tài liệu** | Vai trò và quyền hạn (RBAC) |
-| **Phiên bản** | 1.0.0 |
+| **Phiên bản** | 1.1.0 |
 | **Ngày tạo** | 2026-05-30 |
-| **Người tạo** | Anh Minh Phạm Vũ |
+| **Cập nhật** | 2026-08-18 — ánh xạ cách gọi vận hành Customer / Staff / Admin |
+
+> Cách gọi hàng ngày (**Customer / Staff / Admin**, Manager để sau) và checklist “đã đủ chức năng chưa”: **`docs/11-luong-vai-tro-va-chuc-nang.md`**. File này giữ **tên role trong database**.
 
 ---
 
@@ -35,8 +37,18 @@ User ──── UserRole ──── Role ──── RolePermission ──�
 
 **Các nhóm role:**
 - **System roles** (`isSystem = true`): SUPER_ADMIN, ADMIN — không thể xóa
-- **Staff roles**: WAREHOUSE, SUPPORT, CONTENT — có thể tạo thêm theo nhu cầu
-- **Customer roles**: CUSTOMER — tự động gán khi đăng ký
+- **Staff roles**: WAREHOUSE, SUPPORT, CONTENT — portal nhân viên (`/admin`, login `/dang-nhap-nhan-vien`). Trên vận hành gọi chung là **Staff**
+- **Customer roles**: CUSTOMER — portal cửa hàng. Trên vận hành gọi là **Customer**
+- **Manager** (chưa có trong DB): để sau; gần với ADMIN. Xem `docs/11`
+
+### Ánh xạ nhanh (vận hành → DB)
+
+| Gọi khi làm việc | Role DB | Portal |
+|------------------|---------|--------|
+| Customer | `CUSTOMER` | Cửa hàng |
+| Staff | `WAREHOUSE` / `SUPPORT` / `CONTENT` | `/admin` |
+| Admin | `ADMIN` / `SUPER_ADMIN` | `/admin` |
+| Manager | *chưa tạo* | — |
 
 ---
 
