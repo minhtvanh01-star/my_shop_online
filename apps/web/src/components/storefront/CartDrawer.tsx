@@ -22,7 +22,7 @@ export function CartDrawer() {
   const setOpen = useCartStore((s) => s.setOpen);
   const updateCart = useUpdateCartQuantity();
   const removeCart = useRemoveCartItem();
-  const { usdToVnd } = useShopSettings();
+  const { usdToVnd, localeCurrencies } = useShopSettings();
   const panelRef = useRef<HTMLElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -97,7 +97,7 @@ export function CartDrawer() {
                     {item.variantLabel ? (
                       <p className="text-xs text-[#475569]">{item.variantLabel}</p>
                     ) : null}
-                    <p className="text-sm">{formatDisplayPrice(item.price, locale, usdToVnd)}</p>
+                    <p className="text-sm">{formatDisplayPrice(item.price, locale, usdToVnd, localeCurrencies)}</p>
                     <div className="mt-1 flex items-center gap-2">
                       <button
                         type="button"
@@ -136,7 +136,7 @@ export function CartDrawer() {
         <div className="border-t border-[#E2E8F0] p-4">
           <div className="mb-3 flex justify-between text-sm">
             <span>{t('subtotal')}</span>
-            <span>{formatDisplayPrice(total, locale, usdToVnd)}</span>
+            <span>{formatDisplayPrice(total, locale, usdToVnd, localeCurrencies)}</span>
           </div>
           <Link
             href="/cart"

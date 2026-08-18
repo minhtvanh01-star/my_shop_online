@@ -17,7 +17,7 @@ export default function CartPage() {
   const total = useCartTotal();
   const updateCart = useUpdateCartQuantity();
   const removeCart = useRemoveCartItem();
-  const { usdToVnd } = useShopSettings();
+  const { usdToVnd, localeCurrencies } = useShopSettings();
   const setOpen = useCartStore((s) => s.setOpen);
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function CartPage() {
                     {item.name}
                   </Link>
                   {item.variantLabel ? <p className="text-sm text-[#475569]">{item.variantLabel}</p> : null}
-                  <p className="mt-1">{formatDisplayPrice(item.price, locale, usdToVnd)}</p>
+                  <p className="mt-1">{formatDisplayPrice(item.price, locale, usdToVnd, localeCurrencies)}</p>
                   <div className="mt-2 flex items-center gap-2">
                     <button
                       type="button"
@@ -95,7 +95,7 @@ export default function CartPage() {
           <aside className="h-fit bg-[#E8F1F3] p-4">
             <div className="flex justify-between text-sm">
               <span>{t('subtotal')}</span>
-              <span>{formatDisplayPrice(total, locale, usdToVnd)}</span>
+              <span>{formatDisplayPrice(total, locale, usdToVnd, localeCurrencies)}</span>
             </div>
             <p className="mt-2 text-xs text-[#475569]">{t('shippingCalculated')}</p>
             <CheckoutLink className={`${ctaClassName} mt-4 w-full`} />

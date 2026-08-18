@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import { ok } from '../../utils/response';
-import { UpdateSettingSchema } from './settings.schema';
+import { ToggleFeatureSchema, UpdateSettingSchema } from './settings.schema';
 import * as SettingsService from './settings.service';
 
 export async function getPublicSettingsHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -42,7 +42,8 @@ export async function getFeatureFlagsHandler(req: Request, res: Response, next: 
 
 export async function toggleFeatureFlagHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const result = await SettingsService.toggleFeatureFlag(req.params.key, req.user!.id);
+    const dto = ToggleFeatureSchema.parse(req.body ?? {});
+    const result = await SettingsService.toggleFeatureFlag(req.params.key, req.user!.id, dto);
     ok(res, result);
   } catch (err) {
     next(err);

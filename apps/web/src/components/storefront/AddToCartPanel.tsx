@@ -19,7 +19,8 @@ export function AddToCartPanel({ product }: { product: CatalogProductDetail }) {
   const locale = useLocale();
   const add = useAddToCart();
   const setOpen = useCartStore((s) => s.setOpen);
-  const { usdToVnd } = useShopSettings();
+  const shop = useShopSettings();
+  const { usdToVnd, localeCurrencies, features } = shop;
   const isAuthenticated = useIsAuthenticated();
   const wishlistIds = useWishlistIds();
   const toggleWishlist = useToggleWishlist(product.id);
@@ -50,10 +51,10 @@ export function AddToCartPanel({ product }: { product: CatalogProductDetail }) {
   return (
     <div className="mt-6 space-y-4">
       <div className="flex flex-wrap items-baseline gap-3">
-        <p className="font-heading text-2xl text-[#064E3B]">{formatDisplayPrice(price, locale, usdToVnd)}</p>
+        <p className="font-heading text-2xl text-[#064E3B]">{formatDisplayPrice(price, locale, usdToVnd, localeCurrencies)}</p>
         {compareAt && compareAt > price ? (
           <>
-            <p className="text-sm text-[#475569] line-through">{formatDisplayPrice(compareAt, locale, usdToVnd)}</p>
+            <p className="text-sm text-[#475569] line-through">{formatDisplayPrice(compareAt, locale, usdToVnd, localeCurrencies)}</p>
             {discount > 0 ? (
               <span className="bg-[#EA580C] px-2 py-0.5 text-xs font-semibold text-black">
                 {t('discount', { percent: discount })}
@@ -124,7 +125,7 @@ export function AddToCartPanel({ product }: { product: CatalogProductDetail }) {
           {out ? t('outOfStock') : t('addToCart')}
         </button>
 
-        {isAuthenticated ? (
+        {features.wishlist && isAuthenticated ? (
           <button
             type="button"
             className="flex h-11 cursor-pointer items-center gap-2 border border-[#E2E8F0] px-4 text-sm text-[#064E3B]"
@@ -142,7 +143,7 @@ export function AddToCartPanel({ product }: { product: CatalogProductDetail }) {
             <Heart size={18} aria-hidden="true" fill={inWishlist ? 'currentColor' : 'none'} />
             {inWishlist ? t('removeFromWishlist') : t('addToWishlist')}
           </button>
-        ) : (
+        ) : features.wishlist ? (
           <Link
             href={{ pathname: '/auth/login', query: { redirect: pathname } }}
             className="flex h-11 items-center gap-2 border border-[#E2E8F0] px-4 text-sm text-[#064E3B]"
@@ -150,7 +151,7 @@ export function AddToCartPanel({ product }: { product: CatalogProductDetail }) {
             <Heart size={18} aria-hidden="true" />
             {t('addToWishlist')}
           </Link>
-        )}
+        ) : null}
       </div>
 
       {add.isError ? <p className="text-sm text-[#DC2626]">{cart('maxQuantity')}</p> : null}

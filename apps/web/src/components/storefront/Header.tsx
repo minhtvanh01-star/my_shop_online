@@ -7,8 +7,8 @@ import { Link } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/components/storefront/LocaleSwitch';
 import { HeaderSearch } from '@/components/storefront/HeaderSearch';
 import { useLogout } from '@/hooks/useAuth';
-import { brand } from '@/lib/brand';
 import { staffHomePath } from '@/lib/roles';
+import { useShopSettings } from '@/components/storefront/ShopSettingsProvider';
 import { useCartCount, useCartStore } from '@/stores/cartStore';
 import { useCurrentUser, useHasHydrated, useIsStaff } from '@/stores/authStore';
 
@@ -21,13 +21,14 @@ export function Header() {
   const hydrated = useHasHydrated();
   const isStaff = useIsStaff();
   const logout = useLogout();
+  const shop = useShopSettings();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   const nav = [
     { href: '/' as const, label: t('home') },
     { href: '/products' as const, label: t('products') },
-    { href: '/blog' as const, label: t('blog') },
+    ...(shop.features.blog ? [{ href: '/blog' as const, label: t('blog') }] : []),
   ];
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-[#E2E8F0] bg-white">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
         <Link href="/" className="font-heading text-lg font-semibold text-[#064E3B]">
-          {brand.name}
+          {shop.siteName}
         </Link>
         <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
           {nav.map((item) => (
@@ -64,6 +65,7 @@ export function Header() {
           <LocaleSwitch />
           {hydrated && user ? (
             <>
+              {shop.features.wishlist ? (
               <Link
                 href="/wishlist"
                 className="hidden h-11 items-center gap-1 px-2 text-sm text-[#064E3B] md:flex"
@@ -72,6 +74,7 @@ export function Header() {
                 <Heart size={18} aria-hidden="true" />
                 <span className="sr-only md:not-sr-only">{t('wishlist')}</span>
               </Link>
+              ) : null}
               <Link
                 href="/orders"
                 className="hidden h-11 items-center gap-1 px-2 text-sm text-[#064E3B] md:flex"
@@ -148,9 +151,11 @@ export function Header() {
           </Link>
           {hydrated && user ? (
             <>
+              {shop.features.wishlist ? (
               <Link href="/wishlist" className="block py-2" onClick={() => setMenuOpen(false)}>
                 {t('wishlist')}
               </Link>
+              ) : null}
               <Link href="/orders" className="block py-2" onClick={() => setMenuOpen(false)}>
                 {t('orders')}
               </Link>

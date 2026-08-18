@@ -9,11 +9,13 @@ import { useShopSettings } from '@/components/storefront/ShopSettingsProvider';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ctaClassName } from '@/lib/brand';
-import { checkoutCountry, checkoutCurrency } from '@/lib/format-money';
+import { checkoutCurrency } from '@/lib/format-money';
 import { formatDisplayPrice } from '@/lib/display-price';
 import { getApiError } from '@/lib/api';
 import api from '@/lib/api';
-import { paymentMethodsForLocale, vnpayLocale, type CheckoutPaymentMethod } from '@/lib/payment';
+import { paymentMethodsForSettings, shippingFeeUsd } from '@/lib/shop-settings';
+import { vnpayLocale, type CheckoutPaymentMethod } from '@/lib/payment';
+import { Select } from '@/components/ui/select';
 import { useCartItems, useCartStore, useCartTotal } from '@/stores/cartStore';
 
 type ApiAddress = {
@@ -44,7 +46,7 @@ const emptyAddress = {
   city: '',
   state: '',
   postalCode: '',
-  countryCode: 'VN',
+  countryCode: '',
 };
 
 export function CheckoutWizard() {
@@ -55,23 +57,37 @@ export function CheckoutWizard() {
   const items = useCartItems();
   const total = useCartTotal();
   const clearCart = useCartStore((s) => s.clearCart);
-  const { usdToVnd } = useShopSettings();
-  const methods = useMemo(() => paymentMethodsForLocale(locale), [locale]);
+  const shop = useShopSettings();
+  const methods = useMemo(() => paymentMethodsForSettings(locale, shop), [locale, shop]);
   const summaryRef = useRef<HTMLDivElement>(null);
 
   const [step, setStep] = useState(1);
   const [couponCode, setCouponCode] = useState('');
   const [addresses, setAddresses] = useState<ApiAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | 'new'>('new');
-  const [form, setForm] = useState({ ...emptyAddress, countryCode: checkoutCountry(locale) });
+  const [form, setForm] = useState({ ...emptyAddress, countryCode: shop.defaultCountry });
   const [saveAddress, setSaveAddress] = useState(false);
-  const [method, setMethod] = useState<CheckoutPaymentMethod>(methods[0]);
+  const [method, setMethod] = useState<CheckoutPaymentMethod>(methods[0] ?? 'stripe');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<CreatedOrder | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
-  const currency = checkoutCurrency(locale);
+  const currency = checkoutCurrency(locale, shop.localeCurrencies);
+  const money = (amount: number) => formatDisplayPrice(amount, locale, shop.usdToVnd, shop.localeCurrencies);
+  const shippingUsd = shippingFeeUsd(total, shop);
+
+  useEffect(() => {
+    if (!form.countryCode && shop.defaultCountry) {
+      setForm((prev) => ({ ...prev, countryCode: shop.defaultCountry }));
+    }
+  }, [shop.defaultCountry, form.countryCode]);
+
+  useEffect(() => {
+    if (methods.length > 0 && !methods.includes(method)) {
+      setMethod(methods[0]);
+    }
+  }, [methods, method]);
 
   useEffect(() => {
     api
@@ -145,7 +161,7 @@ export function CheckoutWizard() {
           shippingAddress,
           currency,
           locale,
-          couponCode: couponCode.trim() || undefined,
+          couponCode: shop.features.coupon ? couponCode.trim() || undefined : undefined,
         })
         .then((r) => r.data.data);
       setOrder(created);
@@ -220,14 +236,21 @@ export function CheckoutWizard() {
                   {item.variantLabel ? <p className="text-sm text-[#475569]">{item.variantLabel}</p> : null}
                   <p className="text-sm text-[#475569]">× {item.quantity}</p>
                 </div>
-                <p>{formatDisplayPrice(item.price * item.quantity, locale, usdToVnd)}</p>
+                <p>{money(item.price * item.quantity)}</p>
               </li>
             ))}
           </ul>
           <div className="mt-4 flex justify-between text-sm">
             <span>{cartT('subtotal')}</span>
-            <span>{formatDisplayPrice(total, locale, usdToVnd)}</span>
+            <span>{money(total)}</span>
           </div>
+          {shop.shippingFlatFeeUsd > 0 ? (
+            <div className="mt-2 flex justify-between text-sm">
+              <span>{cartT('shipping')}</span>
+              <span>{shippingUsd === 0 ? cartT('shippingFree') : money(shippingUsd)}</span>
+            </div>
+          ) : null}
+          {shop.features.coupon ? (
           <div className="mt-4">
             <Label htmlFor="coupon">{cartT('coupon')}</Label>
             <Input
@@ -237,6 +260,7 @@ export function CheckoutWizard() {
               autoComplete="off"
             />
           </div>
+          ) : null}
           <button type="button" className={`${ctaClassName} mt-6`} onClick={() => setStep(2)}>
             {common('next')}
           </button>
@@ -343,13 +367,18 @@ export function CheckoutWizard() {
               </div>
               <div>
                 <Label htmlFor="countryCode">{t('countryCode')}</Label>
-                <Input
+                <Select
                   id="countryCode"
                   autoComplete="country"
-                  maxLength={2}
                   value={form.countryCode}
-                  onChange={(e) => setForm((s) => ({ ...s, countryCode: e.target.value.toUpperCase() }))}
-                />
+                  onChange={(e) => setForm((s) => ({ ...s, countryCode: e.target.value }))}
+                >
+                  {shop.allowedCountries.map((code) => (
+                    <option key={code} value={code}>
+                      {code}
+                    </option>
+                  ))}
+                </Select>
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input
@@ -404,7 +433,7 @@ export function CheckoutWizard() {
             {shippingPayload().recipientName}, {shippingPayload().addressLine1}, {shippingPayload().city}
           </p>
           <p className="text-sm">{t(method)}</p>
-          <p className="font-medium">{formatDisplayPrice(total, locale, usdToVnd)}</p>
+          <p className="font-medium">{money(total + shippingUsd)}</p>
           <ErrorSummary
             title={t('errorSummaryTitle')}
             items={error ? [{ id: 'checkout-error', message: error }] : []}

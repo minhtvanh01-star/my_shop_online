@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { authenticate } from '../../middlewares/auth.middleware';
 import { requireAdmin } from '../../middlewares/rbac.middleware';
+import { requireFeature } from '../../middlewares/feature.middleware';
+import { FEATURE_KEYS } from '../../utils/features';
 import { auditLog } from '../../middlewares/audit.middleware';
 import {
   listReviewsHandler,
@@ -16,13 +18,13 @@ const router = Router();
 router.get('/', listReviewsHandler);
 
 // POST /api/v1/reviews — customer: create review
-router.post('/', authenticate, createReviewHandler);
+router.post('/', authenticate, requireFeature(FEATURE_KEYS.reviews), createReviewHandler);
 
 // PUT /api/v1/reviews/:id — customer: update own review
-router.put('/:id', authenticate, updateReviewHandler);
+router.put('/:id', authenticate, requireFeature(FEATURE_KEYS.reviews), updateReviewHandler);
 
 // DELETE /api/v1/reviews/:id — customer: delete own review
-router.delete('/:id', authenticate, deleteReviewHandler);
+router.delete('/:id', authenticate, requireFeature(FEATURE_KEYS.reviews), deleteReviewHandler);
 
 // PATCH /api/v1/reviews/:id/approve — admin: approve/reject review
 router.patch(

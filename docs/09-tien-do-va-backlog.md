@@ -98,12 +98,13 @@ Webhook Stripe: `POST /api/v1/payments/stripe/webhook` (raw body) **trước** `
 | Sản phẩm list + PDP | Đủ dùng | Review **chỉ đọc**; chưa form viết |
 | Danh mục `[slug]` | Mỏng | Không empty state / phân trang |
 | Giỏ + CartDrawer | Đủ dùng | Merge guest sau login có race |
-| Checkout 4 bước | Có | Coupon không preview; currency theo locale (`vi`→VND) |
+| Checkout 4 bước | Có | Coupon theo feature flag; tiền tệ/locale/ship lấy từ Cài đặt |
 | `/checkout/result` | Đủ dùng | `ok=0\|1` (VNPay), `redirect_status` (Stripe), `method=cod` |
 | Login / register | Đủ dùng | Chưa quên mật khẩu |
 | Staff login | Đủ dùng | Tách path; chưa chọn server (cố ý để sau) |
 | Account | Đủ dùng | Thêm/sửa/đặt mặc định/xóa địa chỉ |
-| Orders | Đủ dùng | Chi tiết, hủy pending, đổi/trả 7 ngày, phân trang |
+| Orders | Đủ dùng | Chi tiết, hủy pending, đổi/trả theo số ngày cấu hình, phân trang |
+| Settings | Có | Tên shop, tỉ giá, ship, cổng TT, quốc gia, TTL token, rate limit, feature flags |
 | Wishlist | Đủ dùng | Chưa “thêm vào giỏ” từ wishlist |
 | Blog | Đủ dùng | |
 | CMS / legal | Chưa | |
@@ -114,7 +115,7 @@ Chrome: Header (có ô tìm → `/san-pham?q=`), Footer, CartDrawer có. Header 
 
 | Trang | Mức |
 |-------|-----|
-| Shell + dashboard stats | Mỏng (thiếu loading/error; doanh thu hardcode VND); WAREHOUSE bị đẩy sang kho |
+| Shell + dashboard stats | Mỏng (thiếu loading/error; tiền tệ dashboard lấy từ Cài đặt); WAREHOUSE bị đẩy sang kho |
 | Products list + tạo/sửa form | Có; sửa SP **không** ghi đè tồn |
 | Orders list + đổi status | Có; WAREHOUSE: confirmed→shipped + tracking, **ẩn giá** |
 | Inventory | `/admin/inventory`: tồn/SKU, nhập-điều chỉnh-hỏng, ngưỡng, lịch sử; **không ảnh** |

@@ -8,6 +8,7 @@ import api from '@/lib/api';
 import { formatMoney } from '@/lib/format-money';
 import { isAdminRole, staffHomePath } from '@/lib/roles';
 import { useCurrentUser } from '@/stores/authStore';
+import { useShopSettings } from '@/components/storefront/ShopSettingsProvider';
 
 type DashboardStats = {
   totalUsers: number;
@@ -22,6 +23,7 @@ export default function AdminDashboardPage() {
   const locale = useLocale();
   const router = useRouter();
   const user = useCurrentUser();
+  const shop = useShopSettings();
   const allowed = isAdminRole(user?.role);
 
   useEffect(() => {
@@ -45,7 +47,9 @@ export default function AdminDashboardPage() {
       <dl className="mt-8 grid grid-cols-2 gap-6 md:grid-cols-4">
         <div>
           <dt className="text-sm text-[#475569]">{t('stats.totalRevenue')}</dt>
-          <dd className="mt-1 text-2xl">{formatMoney(data?.totalRevenue, 'VND', 'vi')}</dd>
+          <dd className="mt-1 text-2xl">
+            {formatMoney(data?.totalRevenue, shop.dashboardCurrency, locale)}
+          </dd>
         </div>
         <div>
           <dt className="text-sm text-[#475569]">{t('stats.totalOrders')}</dt>

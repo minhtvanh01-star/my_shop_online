@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { canCreateReturnRequest } from '@/lib/order-return';
+import { useShopSettings } from '@/components/storefront/ShopSettingsProvider';
 
 type ReturnRequest = {
   id: string;
@@ -65,6 +66,7 @@ export default function OrderDetailPage() {
   const [cancelReason, setCancelReason] = useState('');
   const [returnType, setReturnType] = useState<'refund' | 'exchange'>('refund');
   const [returnReason, setReturnReason] = useState('');
+  const shop = useShopSettings();
 
   const query = useQuery({
     queryKey: ['order', params.id],
@@ -110,6 +112,7 @@ export default function OrderDetailPage() {
     orderStatus: order.status,
     deliveredAt: order.deliveredAt,
     hasOpenRequest,
+    windowDays: shop.returnWindowDays,
   });
 
   return (

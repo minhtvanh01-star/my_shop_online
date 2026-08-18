@@ -5,6 +5,7 @@ import { Star } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { LoadingBlock, EmptyBlock } from '@/components/storefront/PageState';
 import api, { type PaginatedApiResponse } from '@/lib/api';
+import { useShopSettings } from '@/components/storefront/ShopSettingsProvider';
 
 type ReviewRow = {
   id: string;
@@ -19,8 +20,10 @@ type ReviewRow = {
 export function ProductReviews({ productId }: { productId: string }) {
   const t = useTranslations('Products');
   const locale = useLocale();
+  const shop = useShopSettings();
   const query = useQuery({
     queryKey: ['reviews', productId],
+    enabled: shop.features.reviews,
     queryFn: () =>
       api
         .get<PaginatedApiResponse<ReviewRow>>(`/reviews?productId=${productId}&limit=10`)
@@ -31,6 +34,8 @@ export function ProductReviews({ productId }: { productId: string }) {
   const total = query.data?.meta.total ?? 0;
   const average =
     items.length > 0 ? items.reduce((sum, row) => sum + row.rating, 0) / items.length : 0;
+
+  if (!shop.features.reviews) return null;
 
   return (
     <section className="mt-16 border-t border-[#E2E8F0] pt-10">

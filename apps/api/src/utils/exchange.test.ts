@@ -18,8 +18,8 @@ test('convertCatalogAmount same currency', () => {
   assert.equal(convertCatalogAmount(12.5, 'USD', 'USD', 25000), 12.5);
 });
 
-test('resolveOrderCurrency follows locale', () => {
+test('resolveOrderCurrency follows locale map', () => {
   assert.equal(resolveOrderCurrency('vi', 'USD'), 'VND');
   assert.equal(resolveOrderCurrency('en', 'USD'), 'USD');
-  assert.equal(resolveOrderCurrency('en', 'VND'), 'VND');
+  assert.equal(resolveOrderCurrency('en', 'VND', { vi: 'VND', en: 'VND' }), 'VND');
 });

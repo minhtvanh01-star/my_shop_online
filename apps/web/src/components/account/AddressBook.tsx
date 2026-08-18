@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { ctaClassName } from '@/lib/brand';
 import api, { getApiError } from '@/lib/api';
+import { useShopSettings } from '@/components/storefront/ShopSettingsProvider';
 
 type ApiAddress = {
   id: string;
@@ -35,7 +36,7 @@ type AddressDraft = {
   isDefault: boolean;
 };
 
-const emptyDraft = (): AddressDraft => ({
+const emptyDraft = (countryCode = ''): AddressDraft => ({
   recipientName: '',
   phone: '',
   addressLine1: '',
@@ -43,7 +44,7 @@ const emptyDraft = (): AddressDraft => ({
   city: '',
   state: '',
   postalCode: '',
-  countryCode: 'VN',
+  countryCode,
   isDefault: false,
 });
 
@@ -78,10 +79,11 @@ function toPayload(draft: AddressDraft) {
 export function AddressBook() {
   const t = useTranslations('Account');
   const common = useTranslations('Common');
+  const shop = useShopSettings();
   const queryClient = useQueryClient();
   const summaryRef = useRef<HTMLDivElement>(null);
   const [editingId, setEditingId] = useState<string | 'new' | null>(null);
-  const [draft, setDraft] = useState<AddressDraft>(emptyDraft);
+  const [draft, setDraft] = useState<AddressDraft>(() => emptyDraft());
   const [formErrors, setFormErrors] = useState<ErrorSummaryItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -97,7 +99,7 @@ export function AddressBook() {
 
   function startCreate() {
     setEditingId('new');
-    setDraft({ ...emptyDraft(), isDefault: (addresses.data ?? []).length === 0 });
+    setDraft({ ...emptyDraft(shop.defaultCountry), isDefault: (addresses.data ?? []).length === 0 });
     setFormErrors([]);
     setError(null);
     setMessage(null);
@@ -113,7 +115,7 @@ export function AddressBook() {
 
   function cancelEdit() {
     setEditingId(null);
-    setDraft(emptyDraft());
+    setDraft(emptyDraft(shop.defaultCountry));
     setFormErrors([]);
   }
 
@@ -319,8 +321,11 @@ export function AddressBook() {
               aria-invalid={formErrors.some((item) => item.id === 'addr-countryCode')}
               onChange={(e) => setDraft((s) => ({ ...s, countryCode: e.target.value }))}
             >
-              <option value="VN">VN</option>
-              <option value="US">US</option>
+              {shop.allowedCountries.map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
             </Select>
           </div>
           <label className="flex items-center gap-2 text-sm text-[#064E3B]">

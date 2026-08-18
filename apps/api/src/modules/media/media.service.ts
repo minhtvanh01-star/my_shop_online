@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../../config/database';
 import { env } from '../../config/env';
 import { AppError } from '../../middlewares/error.middleware';
+import { getShopConfig } from '../../utils/shop-config';
 import type { MediaQueryDto } from './media.schema';
 
 const s3 = new S3Client({
@@ -38,6 +39,12 @@ function publicApiBase(): string {
 async function storeUploadedFile(file: UploadedFile): Promise<{ filename: string; url: string }> {
   if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     throw new AppError(400, 'Invalid file type. Only JPEG, PNG, and WebP are allowed.', 'INVALID_FILE_TYPE');
+  }
+
+  const shop = await getShopConfig();
+  const maxBytes = shop.mediaMaxFileSizeMb * 1024 * 1024;
+  if (file.size > maxBytes) {
+    throw new AppError(400, `File exceeds ${shop.mediaMaxFileSizeMb}MB limit`, 'FILE_TOO_LARGE');
   }
 
   const ext = path.extname(file.originalname).toLowerCase() || '.jpg';

@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../../config/database';
 import { AppError } from '../../middlewares/error.middleware';
 import { convertCatalogAmount, resolveOrderCurrency } from '../../utils/exchange';
-import { getUsdToVndRate } from '../../utils/exchange-rate';
+import { FEATURE_KEYS, assertFeatureEnabled } from '../../utils/features';
+import { getShopConfig, shippingFeeUsd } from '../../utils/shop-config';
 import { settleCodOnDelivered, refundPayment } from '../payments/payments.service';
 import { notifyIfLowStock } from '../inventory/inventory.service';
 import { isWarehouseRole, WAREHOUSE_ORDER_STATUSES } from '../auth/auth.roles';
@@ -111,6 +112,12 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
 
   if (cartItems.length === 0) throw new AppError(400, 'Cart is empty', 'EMPTY_CART');
 
+  const shop = await getShopConfig();
+  const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  if (itemCount > shop.orderMaxItems) {
+    throw new AppError(400, `Cart cannot exceed ${shop.orderMaxItems} items`, 'ORDER_TOO_LARGE');
+  }
+
   // Early validation: product still active (user-friendly check, real stock check is inside tx)
   for (const item of cartItems) {
     if (!item.product.isActive || item.product.deletedAt) {
@@ -121,6 +128,7 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
 
   let coupon: Awaited<ReturnType<typeof prisma.coupon.findFirst>> | null = null;
   if (dto.couponCode) {
+    await assertFeatureEnabled(FEATURE_KEYS.coupon);
     const now = new Date();
 
     // BR-C01 step 1: exists + active
@@ -155,8 +163,8 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
     // BR-C01 step 5: minimum order amount (checked after subtotal is computed below)
   }
 
-  const orderCurrency = resolveOrderCurrency(dto.locale, dto.currency);
-  const exchangeRate = orderCurrency === 'VND' ? await getUsdToVndRate() : 1;
+  const orderCurrency = resolveOrderCurrency(dto.locale, dto.currency, shop.localeCurrencies);
+  const exchangeRate = orderCurrency === 'VND' ? shop.usdToVnd : 1;
 
   const pricedLines = cartItems.map((item) => {
     const catalogUnit =
@@ -202,7 +210,15 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
     }
   }
 
-  const totalAmount = Math.max(subtotal - discountAmount, 0);
+  const merchandiseTotal = Math.max(subtotal - discountAmount, 0);
+  const subtotalUsd = convertCatalogAmount(subtotal, orderCurrency, 'USD', exchangeRate);
+  const shippingFee = convertCatalogAmount(
+    shippingFeeUsd(subtotalUsd, shop),
+    'USD',
+    orderCurrency,
+    exchangeRate,
+  );
+  const totalAmount = merchandiseTotal + shippingFee;
   const orderNumber = generateOrderNumber();
 
   const order = await prisma.$transaction(async (tx) => {
@@ -213,6 +229,7 @@ export async function createOrderFromCart(userId: string, dto: CreateOrderDto) {
         currency: orderCurrency,
         exchangeRate,
         subtotal,
+        shippingFee,
         discountAmount,
         totalAmount,
         shippingAddress: dto.shippingAddress as Prisma.InputJsonValue,
@@ -595,6 +612,7 @@ export async function createReturnRequest(
   });
   if (!order) throw new AppError(404, 'Order not found', 'ORDER_NOT_FOUND');
 
+  const shop = await getShopConfig();
   const hasOpenRequest = order.returnRequests.some((row) =>
     ['pending', 'approved'].includes(row.status),
   );
@@ -603,11 +621,12 @@ export async function createReturnRequest(
       orderStatus: order.status,
       deliveredAt: order.deliveredAt,
       hasOpenRequest,
+      windowDays: shop.returnWindowDays,
     })
   ) {
     throw new AppError(
       400,
-      'Return is only available within 7 days of delivery',
+      `Return is only available within ${shop.returnWindowDays} days of delivery`,
       'RETURN_NOT_ALLOWED',
     );
   }

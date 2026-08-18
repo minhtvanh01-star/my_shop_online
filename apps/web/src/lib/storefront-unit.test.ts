@@ -7,6 +7,7 @@ import { safeInternalPath } from './safe-path.ts';
 import { checkoutResultOutcome } from './checkout-result.ts';
 import { productsSearchUrl } from './products-search.ts';
 import { canCreateReturnRequest } from './order-return.ts';
+import { parseShopSettings, paymentMethodsForSettings } from './shop-settings.ts';
 
 test('parseAmount reads Prisma decimal strings', () => {
   assert.equal(parseAmount('199000.0000'), 199000);
@@ -53,6 +54,14 @@ test('checkoutResultOutcome honors VNPay ok flag', () => {
 test('productsSearchUrl keeps localized path and query', () => {
   assert.equal(productsSearchUrl('/vi/san-pham', '  áo  '), '/vi/san-pham?q=%C3%A1o');
   assert.equal(productsSearchUrl('/en/products', '   '), '/en/products');
+});
+
+test('parseShopSettings hides COD on EN by default', () => {
+  const settings = parseShopSettings([]);
+  assert.equal(settings.siteName, 'My Shop Online');
+  assert.deepEqual(paymentMethodsForSettings('vi', settings), ['vnpay', 'stripe', 'cod']);
+  assert.deepEqual(paymentMethodsForSettings('en', settings), ['stripe']);
+  assert.equal(settings.features.coupon, false);
 });
 
 test('canCreateReturnRequest is delivered + 7 day window', () => {

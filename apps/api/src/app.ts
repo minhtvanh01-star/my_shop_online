@@ -4,7 +4,7 @@ import cors from 'cors';
 import 'dotenv/config';
 import express, { Application } from 'express';
 import path from 'path';
-import { rateLimit } from 'express-rate-limit';
+import { shopRateLimit } from './middlewares/rate-limit.middleware';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
@@ -46,15 +46,7 @@ app.use(
   }),
 );
 
-app.use(
-  rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 200,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Too many requests, please try again later.' },
-  }),
-);
+app.use(shopRateLimit);
 
 // ── Stripe webhook — raw body ONLY, before express.json() ────────────────────
 app.post(

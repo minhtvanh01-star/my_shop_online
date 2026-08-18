@@ -1,6 +1,8 @@
 import { prisma } from '../../config/database';
 import { AppError } from '../../middlewares/error.middleware';
-import type { UpdateSettingDto } from './settings.schema';
+import { invalidateFeatureCache } from '../../utils/features';
+import { invalidateShopConfigCache } from '../../utils/shop-config';
+import type { ToggleFeatureDto, UpdateSettingDto } from './settings.schema';
 
 const ENCRYPTED_PLACEHOLDER = '***';
 
@@ -59,7 +61,7 @@ export async function updateSetting(key: string, dto: UpdateSettingDto, actorId:
     throw new AppError(404, 'Setting not found', 'SETTING_NOT_FOUND');
   }
 
-  return prisma.systemConfig.update({
+  const result = await prisma.systemConfig.update({
     where: { key },
     data: {
       value: dto.value,
@@ -77,6 +79,8 @@ export async function updateSetting(key: string, dto: UpdateSettingDto, actorId:
       updatedAt: true,
     },
   });
+  invalidateShopConfigCache();
+  return result;
 }
 
 export async function getActiveFeatureFlags() {
@@ -93,7 +97,7 @@ export async function getActiveFeatureFlags() {
   });
 }
 
-export async function toggleFeatureFlag(key: string, actorId: string) {
+export async function toggleFeatureFlag(key: string, actorId: string, dto?: ToggleFeatureDto) {
   const existing = await prisma.featureFlag.findUnique({
     where: { key },
     select: { id: true, isEnabled: true },
@@ -103,10 +107,10 @@ export async function toggleFeatureFlag(key: string, actorId: string) {
     throw new AppError(404, 'Feature flag not found', 'FEATURE_NOT_FOUND');
   }
 
-  return prisma.featureFlag.update({
+  const result = await prisma.featureFlag.update({
     where: { key },
     data: {
-      isEnabled: !existing.isEnabled,
+      isEnabled: dto?.isEnabled ?? !existing.isEnabled,
       updatedBy: actorId,
     },
     select: {
@@ -117,4 +121,6 @@ export async function toggleFeatureFlag(key: string, actorId: string) {
       updatedAt: true,
     },
   });
+  invalidateFeatureCache();
+  return result;
 }

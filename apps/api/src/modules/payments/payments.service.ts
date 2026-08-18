@@ -6,6 +6,7 @@ import { env } from '../../config/env';
 import { AppError } from '../../middlewares/error.middleware';
 import { toStripeAmount } from '../../utils/money';
 import { convertCatalogAmount } from '../../utils/exchange';
+import { getShopConfig, paymentMethodsForLocale, type CheckoutPaymentMethod } from '../../utils/shop-config';
 import type { CodCreateDto, RefundPaymentDto, VNPayCreateDto } from './payments.schema';
 
 const stripe = new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
@@ -116,6 +117,13 @@ async function completePayment(opts: {
   });
 }
 
+async function assertPaymentAllowed(provider: CheckoutPaymentMethod, locale: string): Promise<void> {
+  const shop = await getShopConfig();
+  if (!paymentMethodsForLocale(locale, shop).includes(provider)) {
+    throw new AppError(400, `${provider} is not available for this order`, 'PAYMENT_DISABLED');
+  }
+}
+
 // ── Stripe ──────────────────────────────────────────────────────────────────
 
 export async function createStripeIntent(orderId: string, userId: string) {
@@ -123,6 +131,7 @@ export async function createStripeIntent(orderId: string, userId: string) {
     where: { id: orderId, userId, status: 'pending' },
   });
   if (!order) throw new AppError(404, 'Order not found or not payable', 'NOT_FOUND');
+  await assertPaymentAllowed('stripe', order.locale);
 
   const amount = toStripeAmount(Number(order.totalAmount), order.currency);
 
@@ -191,6 +200,7 @@ export async function createVNPayPayment(dto: VNPayCreateDto, userId: string, ip
     where: { id: dto.orderId, userId, status: 'pending' },
   });
   if (!order) throw new AppError(404, 'Order not found or not payable', 'NOT_FOUND');
+  await assertPaymentAllowed('vnpay', order.locale);
 
   const txnRef = `${order.orderNumber}-${Date.now()}`;
   const vndMajor =
@@ -200,7 +210,7 @@ export async function createVNPayPayment(dto: VNPayCreateDto, userId: string, ip
           Number(order.totalAmount),
           order.currency,
           'VND',
-          Number(order.exchangeRate) || 25000,
+          Number(order.exchangeRate) || (await getShopConfig()).usdToVnd,
         );
   const amountVnd = vndMajor * 100; // VNPay: VND major units * 100
 
@@ -300,9 +310,7 @@ export async function createCodPayment(dto: CodCreateDto, userId: string) {
     where: { id: dto.orderId, userId, status: 'pending' },
   });
   if (!order) throw new AppError(404, 'Order not found or not payable', 'NOT_FOUND');
-  if (order.locale !== 'vi' && order.currency !== 'VND') {
-    throw new AppError(400, 'COD is only available for Vietnam orders', 'COD_NOT_AVAILABLE');
-  }
+  await assertPaymentAllowed('cod', order.locale);
 
   const existing = await prisma.payment.findFirst({
     where: { orderId: order.id, provider: 'cod' },

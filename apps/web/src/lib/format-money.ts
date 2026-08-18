@@ -24,10 +24,15 @@ export function formatMoney(
   }
 }
 
-export function checkoutCurrency(locale: string): string {
+export function checkoutCurrency(
+  locale: string,
+  localeCurrencies?: { vi: 'VND' | 'USD'; en: 'VND' | 'USD' },
+): string {
+  if (localeCurrencies) return locale.startsWith('vi') ? localeCurrencies.vi : localeCurrencies.en;
   return locale === 'vi' ? 'VND' : 'USD';
 }
 
-export function checkoutCountry(locale: string): string {
+export function checkoutCountry(locale: string, defaultCountry?: string): string {
+  if (defaultCountry) return defaultCountry;
   return locale === 'vi' ? 'VN' : 'US';
 }

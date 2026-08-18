@@ -6,6 +6,7 @@ import { env } from '../../config/env';
 import { redis } from '../../config/redis';
 import { AppError } from '../../middlewares/error.middleware';
 import { writeAuditLog } from '../../utils/audit';
+import { getShopConfig } from '../../utils/shop-config';
 import type { LoginDto, RegisterDto, ResetPasswordDto } from './auth.schema';
 import { isStaffRole } from './auth.roles';
 
@@ -26,22 +27,15 @@ async function getUserRole(userId: string): Promise<string> {
   return userRole?.role.name ?? 'CUSTOMER';
 }
 
-function generateTokens(userId: string, role: string) {
+async function generateTokens(userId: string, role: string) {
+  const shop = await getShopConfig();
   const accessToken = jwt.sign({ sub: userId, role }, env.JWT_ACCESS_SECRET, {
-    expiresIn: env.JWT_ACCESS_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+    expiresIn: shop.accessTokenTtlS as jwt.SignOptions['expiresIn'],
   });
   const refreshToken = jwt.sign({ sub: userId, role }, env.JWT_REFRESH_SECRET, {
-    expiresIn: env.JWT_REFRESH_EXPIRES_IN as jwt.SignOptions['expiresIn'],
+    expiresIn: `${shop.refreshTokenTtlD}d` as jwt.SignOptions['expiresIn'],
   });
-  return { accessToken, refreshToken };
-}
-
-function tokenExpirySeconds(expiresIn: string): number {
-  const match = expiresIn.match(/^(\d+)([smhd])$/);
-  if (!match) return 3600;
-  const [, num, unit] = match;
-  const map: Record<string, number> = { s: 1, m: 60, h: 3600, d: 86400 };
-  return parseInt(num) * (map[unit] ?? 3600);
+  return { accessToken, refreshToken, refreshTtlS: shop.refreshTokenTtlD * 86400 };
 }
 
 export async function register(dto: RegisterDto) {
@@ -66,14 +60,13 @@ export async function register(dto: RegisterDto) {
   await redis.setex(`${VERIFY_TOKEN_PREFIX}${verifyToken}`, 86400, user.id);
 
   const role = await getUserRole(user.id);
-  const tokens = generateTokens(user.id, role);
+  const { refreshTtlS, ...tokens } = await generateTokens(user.id, role);
 
   const tokenHash = crypto.createHash('sha256').update(tokens.refreshToken).digest('hex');
-  const expirySeconds = tokenExpirySeconds(env.JWT_REFRESH_EXPIRES_IN);
-  const expiresAt = new Date(Date.now() + expirySeconds * 1000);
+  const expiresAt = new Date(Date.now() + refreshTtlS * 1000);
 
   await prisma.session.create({ data: { userId: user.id, tokenHash, expiresAt } });
-  await redis.setex(`${REFRESH_TOKEN_PREFIX}${tokenHash}`, expirySeconds, user.id);
+  await redis.setex(`${REFRESH_TOKEN_PREFIX}${tokenHash}`, refreshTtlS, user.id);
 
   return { user: { ...user, role }, ...tokens };
 }
@@ -119,16 +112,15 @@ export async function login(dto: LoginDto, ipAddress?: string, userAgent?: strin
     );
   }
 
-  const tokens = generateTokens(user.id, role);
+  const { refreshTtlS, ...tokens } = await generateTokens(user.id, role);
 
   const tokenHash = crypto.createHash('sha256').update(tokens.refreshToken).digest('hex');
-  const expirySeconds = tokenExpirySeconds(env.JWT_REFRESH_EXPIRES_IN);
-  const expiresAt = new Date(Date.now() + expirySeconds * 1000);
+  const expiresAt = new Date(Date.now() + refreshTtlS * 1000);
 
   await prisma.session.create({
     data: { userId: user.id, tokenHash, expiresAt, ipAddress, deviceInfo: userAgent },
   });
-  await redis.setex(`${REFRESH_TOKEN_PREFIX}${tokenHash}`, expirySeconds, user.id);
+  await redis.setex(`${REFRESH_TOKEN_PREFIX}${tokenHash}`, refreshTtlS, user.id);
 
   if (dto.portal === 'staff') {
     await writeAuditLog({
@@ -170,17 +162,16 @@ export async function refresh(refreshToken: string) {
   if (!user || !user.isActive) throw new AppError(401, 'User inactive', 'UNAUTHORIZED');
 
   const role = await getUserRole(user.id);
-  const tokens = generateTokens(user.id, role);
+  const { refreshTtlS, ...tokens } = await generateTokens(user.id, role);
   const newHash = crypto.createHash('sha256').update(tokens.refreshToken).digest('hex');
-  const expirySeconds = tokenExpirySeconds(env.JWT_REFRESH_EXPIRES_IN);
-  const expiresAt = new Date(Date.now() + expirySeconds * 1000);
+  const expiresAt = new Date(Date.now() + refreshTtlS * 1000);
 
   await prisma.$transaction([
     prisma.session.delete({ where: { tokenHash } }),
     prisma.session.create({ data: { userId: user.id, tokenHash: newHash, expiresAt } }),
   ]);
   await redis.del(`${REFRESH_TOKEN_PREFIX}${tokenHash}`);
-  await redis.setex(`${REFRESH_TOKEN_PREFIX}${newHash}`, expirySeconds, user.id);
+  await redis.setex(`${REFRESH_TOKEN_PREFIX}${newHash}`, refreshTtlS, user.id);
 
   return tokens;
 }

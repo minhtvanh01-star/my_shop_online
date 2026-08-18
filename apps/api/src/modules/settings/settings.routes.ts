@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../../middlewares/auth.middleware';
-import { requireAdmin, requireSuperAdmin } from '../../middlewares/rbac.middleware';
+import { requireAdmin } from '../../middlewares/rbac.middleware';
 import { auditLog } from '../../middlewares/audit.middleware';
 import {
   getPublicSettingsHandler,
@@ -34,7 +34,7 @@ router.put(
 router.patch(
   '/features/:key',
   authenticate,
-  requireSuperAdmin,
+  requireAdmin,
   auditLog('TOGGLE_FEATURE_FLAG', 'FeatureFlag', { sensitive: true, omitBody: true, resourceIdParam: 'key' }),
   toggleFeatureFlagHandler,
 );

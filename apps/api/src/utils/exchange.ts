@@ -22,8 +22,14 @@ export function convertCatalogAmount(
   return value;
 }
 
-export function resolveOrderCurrency(locale: string, requested?: string): 'VND' | 'USD' {
-  if (locale.toLowerCase().startsWith('vi')) return 'VND';
+export function resolveOrderCurrency(
+  locale: string,
+  requested?: string,
+  localeCurrencies: { vi: 'VND' | 'USD'; en: 'VND' | 'USD' } = { vi: 'VND', en: 'USD' },
+): 'VND' | 'USD' {
+  const key = locale.toLowerCase().startsWith('vi') ? 'vi' : 'en';
+  const mapped = localeCurrencies[key];
+  if (mapped === 'VND' || mapped === 'USD') return mapped;
   const code = (requested ?? 'USD').toUpperCase();
   return code === 'VND' ? 'VND' : 'USD';
 }

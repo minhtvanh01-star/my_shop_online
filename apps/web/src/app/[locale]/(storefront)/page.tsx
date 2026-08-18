@@ -6,7 +6,7 @@ import { SectionHeader } from '@/components/storefront/SectionHeader';
 import { TrustBar } from '@/components/storefront/TrustBar';
 import { ctaClassName } from '@/lib/brand';
 import { productImage, productName, type ApiCategory, type CatalogProduct } from '@/lib/catalog';
-import { brand } from '@/lib/brand';
+import { loadPublicShopSettings } from '@/lib/public-shop';
 import { serverGet, serverGetPaginated } from '@/lib/server-api';
 
 type BlogPost = {
@@ -30,6 +30,7 @@ export default async function HomePage() {
   const common = await getTranslations('Common');
   const blogT = await getTranslations('Blog');
 
+  const shop = await loadPublicShopSettings();
   let featured: CatalogProduct[] = [];
   let categories: ApiCategory[] = [];
   let posts: BlogPost[] = [];
@@ -37,7 +38,9 @@ export default async function HomePage() {
     const [featuredRes, categoryRes, blogRes] = await Promise.all([
       serverGetPaginated<CatalogProduct>(`/products?isFeatured=true&locale=${locale}&limit=8`),
       serverGet<ApiCategory[]>('/categories'),
-      serverGetPaginated<BlogPost>(`/blog?limit=3&locale=${locale}`),
+      shop.features.blog
+        ? serverGetPaginated<BlogPost>(`/blog?limit=3&locale=${locale}`)
+        : Promise.resolve({ data: [] as BlogPost[] }),
     ]);
     featured = featuredRes.data;
     categories = categoryRes;
@@ -63,7 +66,7 @@ export default async function HomePage() {
           />
         ) : null}
         <div className="absolute inset-x-0 bottom-0 bg-white px-6 py-8 md:px-12">
-          <p className="font-heading text-sm font-semibold tracking-wide text-[#059669]">{brand.name}</p>
+          <p className="font-heading text-sm font-semibold tracking-wide text-[#059669]">{shop.siteName}</p>
           <h1 className="mt-2 max-w-xl font-heading text-4xl font-semibold text-[#064E3B] md:text-5xl">
             {t('hero.heading')}
           </h1>
@@ -72,9 +75,11 @@ export default async function HomePage() {
             <Link href="/products" className={ctaClassName}>
               {t('hero.cta')}
             </Link>
+            {shop.features.blog ? (
             <Link href="/blog" className="inline-flex h-11 items-center text-sm text-[#059669] underline-offset-4 hover:underline">
               {nav('blog')}
             </Link>
+            ) : null}
           </div>
         </div>
       </section>

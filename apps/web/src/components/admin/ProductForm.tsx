@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import api, { getApiError } from '@/lib/api';
 import type { ApiCategory } from '@/lib/catalog';
 import { ctaClassName } from '@/lib/brand';
+import { useShopSettings } from '@/components/storefront/ShopSettingsProvider';
 import { skuFromSlug, slugify } from '@/lib/slug';
 import { uploadProductImage } from '@/lib/upload-media';
 
@@ -55,7 +56,7 @@ const EMPTY: ProductFormInitial = {
   type: 'simple',
   categoryId: '',
   categoryIds: [],
-  currency: 'VND',
+  currency: 'USD',
   basePrice: '',
   compareAt: '',
   stockQuantity: '0',
@@ -97,6 +98,7 @@ export function ProductForm({
   const locale = useLocale();
   const router = useRouter();
   const [form, setForm] = useState<ProductFormInitial>(initial ?? EMPTY);
+  const shop = useShopSettings();
   const [slugTouched, setSlugTouched] = useState(mode === 'edit');
   const [skuTouched, setSkuTouched] = useState(mode === 'edit');
   const [errors, setErrors] = useState<string[]>([]);
@@ -107,6 +109,13 @@ export function ProductForm({
   useEffect(() => {
     if (initial) setForm(initial);
   }, [initial]);
+
+  useEffect(() => {
+    if (initial || mode !== 'create') return;
+    setForm((prev) =>
+      prev.currency === EMPTY.currency ? { ...prev, currency: shop.catalogCurrency } : prev,
+    );
+  }, [initial, mode, shop.catalogCurrency]);
 
   const categoriesQuery = useQuery({
     queryKey: ['categories-tree'],
@@ -428,8 +437,14 @@ export function ProductForm({
           <div className="space-y-1">
             <Label htmlFor="currency">{t('form.currency')}</Label>
             <Select id="currency" value={form.currency} onChange={(e) => setField('currency', e.target.value)}>
-              <option value="VND">VND</option>
-              <option value="USD">USD</option>
+              {(shop.features.multiCurrency
+                ? ['VND', 'USD']
+                : [...new Set([shop.catalogCurrency, form.currency])]
+              ).map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
             </Select>
           </div>
           <div className="space-y-1">
