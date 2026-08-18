@@ -1,4 +1,16 @@
 {
+  "name": "my-shop-online",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:free": "node scripts/free-ports.mjs",
+    "dev:api": "npm run dev --prefix apps/api",
+    "dev:web": "npm run dev --prefix apps/web",
+    "setup": "npm install --prefix apps/api && npm install --prefix apps/web",
+    "typecheck": "npm run typecheck --prefix apps/api && npm run typecheck --prefix apps/web",
+    "test": "npm run test --prefix apps/api && npm run test --prefix apps/web"
+  },
   "dependencies": {
     "@prisma/client": "^5.22.0",
     "prisma": "^5.22.0"
