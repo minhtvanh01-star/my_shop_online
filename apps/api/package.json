@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/utils/money.test.ts",
+    "test": "node --experimental-strip-types --test src/utils/money.test.ts src/utils/inventory-delta.test.ts src/utils/exchange.test.ts src/utils/order-return.test.ts src/utils/audit.test.ts",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",

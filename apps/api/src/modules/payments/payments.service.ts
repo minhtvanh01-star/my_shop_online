@@ -5,6 +5,7 @@ import { prisma } from '../../config/database';
 import { env } from '../../config/env';
 import { AppError } from '../../middlewares/error.middleware';
 import { toStripeAmount } from '../../utils/money';
+import { convertCatalogAmount } from '../../utils/exchange';
 import type { CodCreateDto, RefundPaymentDto, VNPayCreateDto } from './payments.schema';
 
 const stripe = new Stripe(env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
@@ -192,7 +193,16 @@ export async function createVNPayPayment(dto: VNPayCreateDto, userId: string, ip
   if (!order) throw new AppError(404, 'Order not found or not payable', 'NOT_FOUND');
 
   const txnRef = `${order.orderNumber}-${Date.now()}`;
-  const amountVnd = Math.round(Number(order.totalAmount) * 100); // VNPay: amount * 100
+  const vndMajor =
+    order.currency.toUpperCase() === 'VND'
+      ? Math.round(Number(order.totalAmount))
+      : convertCatalogAmount(
+          Number(order.totalAmount),
+          order.currency,
+          'VND',
+          Number(order.exchangeRate) || 25000,
+        );
+  const amountVnd = vndMajor * 100; // VNPay: VND major units * 100
 
   const params: Record<string, string> = {
     vnp_Version: '2.1.0',

@@ -8,7 +8,7 @@ import { ctaClassName } from '@/lib/brand';
 import { getPathname } from '@/i18n/navigation';
 import { stripePublishableKey } from '@/lib/payment';
 
-function StripeInner({ locale }: { locale: string }) {
+function StripeInner({ locale, orderNumber }: { locale: string; orderNumber?: string }) {
   const stripe = useStripe();
   const elements = useElements();
   const t = useTranslations('Checkout');
@@ -23,14 +23,15 @@ function StripeInner({ locale }: { locale: string }) {
         if (!stripe || !elements) return;
         setBusy(true);
         setError(null);
+        const returnPath = getPathname({
+          href: '/checkout/result',
+          locale: locale as 'vi' | 'en',
+        });
+        const returnUrl = new URL(`${window.location.origin}${returnPath}`);
+        if (orderNumber) returnUrl.searchParams.set('order', orderNumber);
         const { error: confirmError } = await stripe.confirmPayment({
           elements,
-          confirmParams: {
-            return_url: `${window.location.origin}${getPathname({
-              href: '/checkout/result',
-              locale: locale as 'vi' | 'en',
-            })}`,
-          },
+          confirmParams: { return_url: returnUrl.toString() },
         });
         if (confirmError) setError(confirmError.message ?? t('processing'));
         setBusy(false);
@@ -45,7 +46,13 @@ function StripeInner({ locale }: { locale: string }) {
   );
 }
 
-export function StripePayForm({ clientSecret }: { clientSecret: string }) {
+export function StripePayForm({
+  clientSecret,
+  orderNumber,
+}: {
+  clientSecret: string;
+  orderNumber?: string;
+}) {
   const locale = useLocale();
   const t = useTranslations('Checkout');
   const key = stripePublishableKey();
@@ -64,7 +71,7 @@ export function StripePayForm({ clientSecret }: { clientSecret: string }) {
         appearance: { theme: 'stripe' },
       }}
     >
-      <StripeInner locale={locale} />
+      <StripeInner locale={locale} orderNumber={orderNumber} />
     </Elements>
   );
 }

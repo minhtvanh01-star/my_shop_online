@@ -1,13 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, getPathname } from '@/i18n/navigation';
+import { ErrorSummary } from '@/components/auth/ErrorSummary';
+import { StripePayForm } from '@/components/checkout/StripePayForm';
+import { useShopSettings } from '@/components/storefront/ShopSettingsProvider';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { StripePayForm } from '@/components/checkout/StripePayForm';
 import { ctaClassName } from '@/lib/brand';
-import { checkoutCountry, checkoutCurrency, formatMoney } from '@/lib/format-money';
+import { checkoutCountry, checkoutCurrency } from '@/lib/format-money';
+import { formatDisplayPrice } from '@/lib/display-price';
 import { getApiError } from '@/lib/api';
 import api from '@/lib/api';
 import { paymentMethodsForLocale, vnpayLocale, type CheckoutPaymentMethod } from '@/lib/payment';
@@ -52,7 +55,9 @@ export function CheckoutWizard() {
   const items = useCartItems();
   const total = useCartTotal();
   const clearCart = useCartStore((s) => s.clearCart);
+  const { usdToVnd } = useShopSettings();
   const methods = useMemo(() => paymentMethodsForLocale(locale), [locale]);
+  const summaryRef = useRef<HTMLDivElement>(null);
 
   const [step, setStep] = useState(1);
   const [couponCode, setCouponCode] = useState('');
@@ -66,7 +71,7 @@ export function CheckoutWizard() {
   const [order, setOrder] = useState<CreatedOrder | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
 
-  const currency = items[0]?.currency ?? checkoutCurrency(locale);
+  const currency = checkoutCurrency(locale);
 
   useEffect(() => {
     api
@@ -144,7 +149,6 @@ export function CheckoutWizard() {
         })
         .then((r) => r.data.data);
       setOrder(created);
-      clearCart();
 
       if (method === 'stripe') {
         const intent = await api
@@ -154,6 +158,7 @@ export function CheckoutWizard() {
         return;
       }
       if (method === 'vnpay') {
+        clearCart();
         const pay = await api
           .post<{ data: { paymentUrl: string } }>('/payments/vnpay/create', {
             orderId: created.id,
@@ -163,6 +168,7 @@ export function CheckoutWizard() {
         window.location.assign(pay.paymentUrl);
         return;
       }
+      clearCart();
       await api.post('/payments/cod', { orderId: created.id });
       const resultPath = getPathname({ href: '/checkout/result', locale: locale as 'vi' | 'en' });
       window.location.assign(
@@ -170,6 +176,7 @@ export function CheckoutWizard() {
       );
     } catch (err) {
       setError(getApiError(err));
+      requestAnimationFrame(() => summaryRef.current?.focus());
     } finally {
       setBusy(false);
     }
@@ -213,13 +220,13 @@ export function CheckoutWizard() {
                   {item.variantLabel ? <p className="text-sm text-[#475569]">{item.variantLabel}</p> : null}
                   <p className="text-sm text-[#475569]">× {item.quantity}</p>
                 </div>
-                <p>{formatMoney(item.price * item.quantity, item.currency, locale)}</p>
+                <p>{formatDisplayPrice(item.price * item.quantity, locale, usdToVnd)}</p>
               </li>
             ))}
           </ul>
           <div className="mt-4 flex justify-between text-sm">
             <span>{cartT('subtotal')}</span>
-            <span>{formatMoney(total, currency, locale)}</span>
+            <span>{formatDisplayPrice(total, locale, usdToVnd)}</span>
           </div>
           <div className="mt-4">
             <Label htmlFor="coupon">{cartT('coupon')}</Label>
@@ -397,10 +404,22 @@ export function CheckoutWizard() {
             {shippingPayload().recipientName}, {shippingPayload().addressLine1}, {shippingPayload().city}
           </p>
           <p className="text-sm">{t(method)}</p>
-          <p className="font-medium">{formatMoney(total, currency, locale)}</p>
-          {error ? <p className="text-sm text-[#DC2626]">{error}</p> : null}
+          <p className="font-medium">{formatDisplayPrice(total, locale, usdToVnd)}</p>
+          <ErrorSummary
+            title={t('errorSummaryTitle')}
+            items={error ? [{ id: 'checkout-error', message: error }] : []}
+            summaryRef={summaryRef}
+          />
+          {order && method === 'stripe' ? (
+            <p className="text-sm text-[#475569]">
+              {t('orderCreated', { number: order.orderNumber })}{' '}
+              <Link href="/orders" className="text-[#059669] underline">
+                {t('viewOrder')}
+              </Link>
+            </p>
+          ) : null}
           {clientSecret ? (
-            <StripePayForm clientSecret={clientSecret} />
+            <StripePayForm clientSecret={clientSecret} orderNumber={order?.orderNumber} />
           ) : (
             <div className="flex gap-3">
               <button type="button" className="h-11 px-4 text-sm" onClick={() => setStep(3)} disabled={busy}>
