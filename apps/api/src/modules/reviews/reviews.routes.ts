@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../middlewares/auth.middleware';
 import { requireAdmin } from '../../middlewares/rbac.middleware';
+import { auditLog } from '../../middlewares/audit.middleware';
 import {
   listReviewsHandler,
   createReviewHandler,
@@ -24,6 +25,12 @@ router.put('/:id', authenticate, updateReviewHandler);
 router.delete('/:id', authenticate, deleteReviewHandler);
 
 // PATCH /api/v1/reviews/:id/approve — admin: approve/reject review
-router.patch('/:id/approve', authenticate, requireAdmin, approveReviewHandler);
+router.patch(
+  '/:id/approve',
+  authenticate,
+  requireAdmin,
+  auditLog('MODERATE_REVIEW', 'ProductReview'),
+  approveReviewHandler,
+);
 
 export default router;

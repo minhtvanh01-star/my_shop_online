@@ -5,7 +5,9 @@ import { prisma } from '../../config/database';
 import { env } from '../../config/env';
 import { redis } from '../../config/redis';
 import { AppError } from '../../middlewares/error.middleware';
+import { writeAuditLog } from '../../utils/audit';
 import type { LoginDto, RegisterDto, ResetPasswordDto } from './auth.schema';
+import { isStaffRole } from './auth.roles';
 
 const SALT_ROUNDS = 12;
 const REFRESH_TOKEN_PREFIX = 'refresh:';
@@ -100,6 +102,23 @@ export async function login(dto: LoginDto, ipAddress?: string, userAgent?: strin
   }
 
   const role = await getUserRole(user.id);
+
+  if (dto.portal === 'staff' && !isStaffRole(role)) {
+    throw new AppError(
+      403,
+      'This account is not authorized for staff access',
+      'STAFF_ACCESS_REQUIRED',
+    );
+  }
+
+  if (dto.portal === 'customer' && isStaffRole(role)) {
+    throw new AppError(
+      403,
+      'Staff accounts must sign in through the staff portal',
+      'STAFF_USE_STAFF_PORTAL',
+    );
+  }
+
   const tokens = generateTokens(user.id, role);
 
   const tokenHash = crypto.createHash('sha256').update(tokens.refreshToken).digest('hex');
@@ -110,6 +129,18 @@ export async function login(dto: LoginDto, ipAddress?: string, userAgent?: strin
     data: { userId: user.id, tokenHash, expiresAt, ipAddress, deviceInfo: userAgent },
   });
   await redis.setex(`${REFRESH_TOKEN_PREFIX}${tokenHash}`, expirySeconds, user.id);
+
+  if (dto.portal === 'staff') {
+    await writeAuditLog({
+      actorId: user.id,
+      actorType: role,
+      action: 'STAFF_LOGIN',
+      resourceType: 'Auth',
+      resourceId: user.id,
+      ipAddress: ipAddress ?? '',
+      userAgent: userAgent ?? '',
+    });
+  }
 
   const { passwordHash: _, deletedAt: __, ...safeUser } = user;
   return { user: { ...safeUser, role }, ...tokens };

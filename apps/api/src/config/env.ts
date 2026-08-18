@@ -42,6 +42,7 @@ const envSchema = z.object({
 
   // Client URL
   CLIENT_URL: z.string().url().default('http://localhost:3000'),
+  API_PUBLIC_URL: z.string().url().optional(),
 
   // Email (optional)
   SMTP_HOST: z.string().optional(),

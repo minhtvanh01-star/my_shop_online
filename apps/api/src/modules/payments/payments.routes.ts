@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../../middlewares/auth.middleware';
 import { requireAdmin } from '../../middlewares/rbac.middleware';
+import { auditLog } from '../../middlewares/audit.middleware';
 import {
   createCodHandler,
   createStripeIntentHandler,
@@ -16,7 +17,13 @@ const router = Router();
 router.post('/stripe/intent', authenticate, createStripeIntentHandler);
 router.post('/vnpay/create', authenticate, createVNPayHandler);
 router.post('/cod', authenticate, createCodHandler);
-router.post('/:id/refund', authenticate, requireAdmin, refundPaymentHandler);
+router.post(
+  '/:id/refund',
+  authenticate,
+  requireAdmin,
+  auditLog('REFUND_PAYMENT', 'Payment'),
+  refundPaymentHandler,
+);
 
 // VNPay browser return + server IPN (no auth)
 router.get('/vnpay/return', vnpayReturnHandler);

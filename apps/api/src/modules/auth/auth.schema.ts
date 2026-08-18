@@ -11,6 +11,8 @@ export const RegisterSchema = z.object({
 export const LoginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+  /** customer = storefront; staff = admin portal (rejects CUSTOMER role) */
+  portal: z.enum(['customer', 'staff']).default('customer'),
 });
 
 export const RefreshSchema = z.object({
