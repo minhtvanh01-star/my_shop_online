@@ -97,8 +97,9 @@ const CUSTOMER_USERS = [
 // ─── System Configs ────────────────────────────────────────────────────────────
 const SYSTEM_CONFIGS = [
   { key: 'site.name',                  value: 'My Shop Online', dataType: 'string',  group: 'general',  description: 'Tên website',                         isPublic: true  },
-  { key: 'site.locale_default',        value: 'en',             dataType: 'string',  group: 'general',  description: 'Ngôn ngữ mặc định',                   isPublic: true  },
-  { key: 'site.currency_default',      value: 'USD',            dataType: 'string',  group: 'general',  description: 'Đơn vị tiền tệ mặc định',             isPublic: true  },
+  { key: 'site.locale_default',        value: 'vi',             dataType: 'string',  group: 'general',  description: 'Ngôn ngữ mặc định',                   isPublic: true  },
+  { key: 'site.currency_default',      value: 'USD',            dataType: 'string',  group: 'general',  description: 'Đơn vị tiền gốc trong catalog (USD)', isPublic: true  },
+  { key: 'exchange.usd_to_vnd',        value: '25000',          dataType: 'number',  group: 'general',  description: 'Tỉ giá 1 USD = ? VND (admin cấu hình)', isPublic: true  },
   { key: 'site.maintenance_mode',      value: 'false',          dataType: 'boolean', group: 'general',  description: 'Chế độ bảo trì',                      isPublic: false },
   { key: 'shipping.free_threshold',    value: '50',             dataType: 'number',  group: 'shipping', description: 'Ngưỡng miễn phí vận chuyển (USD)',     isPublic: true  },
   { key: 'payment.stripe_enabled',     value: 'true',           dataType: 'boolean', group: 'payment',  description: 'Bật/tắt thanh toán Stripe',            isPublic: false },
@@ -432,13 +433,23 @@ async function main() {
       },
     });
 
-    // Translation (EN)
+    // Translation (EN + VI)
     await prisma.productTranslation.upsert({
       where:  { productId_locale: { productId: product.id, locale: 'en' } },
       update: {},
       create: {
         productId:   product.id,
         locale:      'en',
+        name:        p.translation.name,
+        description: p.translation.description,
+      },
+    });
+    await prisma.productTranslation.upsert({
+      where:  { productId_locale: { productId: product.id, locale: 'vi' } },
+      update: {},
+      create: {
+        productId:   product.id,
+        locale:      'vi',
         name:        p.translation.name,
         description: p.translation.description,
       },

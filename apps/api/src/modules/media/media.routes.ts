@@ -2,6 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import { authenticate } from '../../middlewares/auth.middleware';
 import { requireAdmin } from '../../middlewares/rbac.middleware';
+import { auditLog } from '../../middlewares/audit.middleware';
 import {
   uploadFileHandler,
   uploadBulkHandler,
@@ -25,15 +26,29 @@ const upload = multer({
 });
 
 // POST /api/v1/media/upload       — single file upload to R2
-router.post('/upload', authenticate, requireAdmin, upload.single('file'), uploadFileHandler);
+router.post(
+  '/upload',
+  authenticate,
+  requireAdmin,
+  upload.single('file'),
+  auditLog('UPLOAD_MEDIA', 'Media', { omitBody: true }),
+  uploadFileHandler,
+);
 
 // POST /api/v1/media/upload/bulk  — multiple files (max 10)
-router.post('/upload/bulk', authenticate, requireAdmin, upload.array('files', 10), uploadBulkHandler);
+router.post(
+  '/upload/bulk',
+  authenticate,
+  requireAdmin,
+  upload.array('files', 10),
+  auditLog('UPLOAD_MEDIA_BULK', 'Media', { omitBody: true }),
+  uploadBulkHandler,
+);
 
 // GET /api/v1/media               — media library (admin, paginated)
 router.get('/', authenticate, requireAdmin, listMediaHandler);
 
 // DELETE /api/v1/media/:id        — delete file from R2 + DB record
-router.delete('/:id', authenticate, requireAdmin, deleteMediaHandler);
+router.delete('/:id', authenticate, requireAdmin, auditLog('DELETE_MEDIA', 'Media'), deleteMediaHandler);
 
 export default router;

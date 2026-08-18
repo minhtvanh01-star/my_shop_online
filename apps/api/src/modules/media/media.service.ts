@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { v4 as uuidv4 } from 'uuid';
+import { promises as fs } from 'fs';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import { prisma } from '../../config/database';
 import { env } from '../../config/env';
 import { AppError } from '../../middlewares/error.middleware';
@@ -16,6 +17,7 @@ const s3 = new S3Client({
 });
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const UPLOAD_DIR = path.resolve(process.cwd(), 'uploads');
 
 interface UploadedFile {
   originalname: string;
@@ -24,15 +26,30 @@ interface UploadedFile {
   size: number;
 }
 
-async function uploadFileToR2(file: UploadedFile): Promise<{ filename: string; url: string }> {
+function useLocalMedia(): boolean {
+  const accountId = env.R2_ACCOUNT_ID;
+  return !accountId || accountId === 'local' || accountId.startsWith('your_');
+}
+
+function publicApiBase(): string {
+  return env.API_PUBLIC_URL ?? `http://localhost:${env.PORT}`;
+}
+
+async function storeUploadedFile(file: UploadedFile): Promise<{ filename: string; url: string }> {
   if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     throw new AppError(400, 'Invalid file type. Only JPEG, PNG, and WebP are allowed.', 'INVALID_FILE_TYPE');
   }
 
-  const ext = path.extname(file.originalname).toLowerCase();
+  const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
   const filename = `${uuidv4()}${ext}`;
-  const url = `${env.R2_PUBLIC_URL}/${filename}`;
 
+  if (useLocalMedia()) {
+    await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    await fs.writeFile(path.join(UPLOAD_DIR, filename), file.buffer);
+    return { filename, url: `${publicApiBase()}/uploads/${filename}` };
+  }
+
+  const url = `${env.R2_PUBLIC_URL}/${filename}`;
   await s3.send(
     new PutObjectCommand({
       Bucket: env.R2_BUCKET_NAME,
@@ -41,12 +58,11 @@ async function uploadFileToR2(file: UploadedFile): Promise<{ filename: string; u
       ContentType: file.mimetype,
     }),
   );
-
   return { filename, url };
 }
 
 export async function uploadSingle(file: UploadedFile, uploadedBy: string) {
-  const { filename, url } = await uploadFileToR2(file);
+  const { filename, url } = await storeUploadedFile(file);
 
   return prisma.mediaFile.create({
     data: {
@@ -127,12 +143,16 @@ export async function deleteMediaFile(id: string) {
     throw new AppError(404, 'Media file not found', 'MEDIA_NOT_FOUND');
   }
 
-  await s3.send(
-    new DeleteObjectCommand({
-      Bucket: env.R2_BUCKET_NAME,
-      Key: media.filename,
-    }),
-  );
+  if (useLocalMedia()) {
+    await fs.unlink(path.join(UPLOAD_DIR, media.filename)).catch(() => undefined);
+  } else {
+    await s3.send(
+      new DeleteObjectCommand({
+        Bucket: env.R2_BUCKET_NAME,
+        Key: media.filename,
+      }),
+    );
+  }
 
   await prisma.mediaFile.update({
     where: { id },

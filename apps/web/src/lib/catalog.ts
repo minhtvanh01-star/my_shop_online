@@ -1,7 +1,12 @@
 import { parseAmount } from './format-money';
 import type { CartItem } from '../types';
 
-export type ApiTranslation = { name?: string; description?: string | null; locale?: string };
+export type ApiTranslation = {
+  name?: string;
+  shortDescription?: string | null;
+  description?: string | null;
+  locale?: string;
+};
 export type ApiImage = { url: string; altText?: string | null };
 
 export type CatalogProduct = {
@@ -31,6 +36,8 @@ export type CatalogVariant = {
 export type CatalogProductDetail = CatalogProduct & {
   variants: CatalogVariant[];
   prices?: { currency: string; amount: string | number; compareAt?: string | number | null }[];
+  specifications?: { name: string; value: string; unit?: string | null }[];
+  productCategories?: { isPrimary: boolean; category: { id: string; slug: string; name: string } }[];
 };
 
 export type ApiCartLine = {
@@ -71,6 +78,22 @@ export function productImage(product: { images: ApiImage[] }): { url: string; al
   const image = product.images[0];
   if (!image?.url) return null;
   return { url: image.url, alt: image.altText ?? '' };
+}
+
+/** Compare-at price in USD from product_prices, if higher than sale price. */
+export function productCompareAtUsd(product: {
+  basePrice: string | number;
+  prices?: { currency: string; amount?: string | number; compareAt?: string | number | null }[];
+}): number | null {
+  const usdRow = product.prices?.find((row) => row.currency === 'USD');
+  const sale = parseAmount(usdRow?.amount ?? product.basePrice);
+  const compare = parseAmount(usdRow?.compareAt);
+  return compare > sale ? compare : null;
+}
+
+export function discountPercent(sale: number, compare: number): number {
+  if (compare <= 0 || sale >= compare) return 0;
+  return Math.round(((compare - sale) / compare) * 100);
 }
 
 export function unitPrice(
