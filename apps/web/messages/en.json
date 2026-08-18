@@ -24,7 +24,8 @@
     "noResults": "No results found",
     "required": "This field is required",
     "optional": "(optional)",
-    "or": "or"
+    "or": "or",
+    "pagination": "Pagination"
   },
   "Nav": {
     "home": "Home",
@@ -38,7 +39,9 @@
     "login": "Login",
     "register": "Register",
     "logout": "Logout",
-    "admin": "Admin"
+    "admin": "Admin",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "Home": {
     "title": "Welcome to My Shop",
@@ -48,15 +51,38 @@
       "cta": "Shop Now"
     },
     "featuredProducts": "Featured Products",
-    "newArrivals": "New Arrivals",
+    "newArrivals": "New arrivals",
     "topCategories": "Top Categories",
-    "latestPosts": "Latest Posts"
+    "categoriesLead": "Browse by category",
+    "latestPosts": "Latest Posts",
+    "trust": {
+      "title": "Shop with confidence",
+      "shipping": {
+        "title": "Fast delivery",
+        "body": "Domestic & international"
+      },
+      "secure": {
+        "title": "Secure checkout",
+        "body": "Stripe & VNPay protected"
+      },
+      "payment": {
+        "title": "Flexible payment",
+        "body": "Card, VNPay, COD"
+      },
+      "returns": {
+        "title": "Order support",
+        "body": "Track & cancel easily"
+      }
+    }
   },
   "Products": {
     "pageTitle": "Products",
+    "searchPlaceholder": "Search products...",
+    "resultsCount": "{count} products",
     "sortBy": "Sort by",
     "sortOptions": {
       "newest": "Newest",
+      "nameAsc": "Name A → Z",
       "priceAsc": "Price: Low to High",
       "priceDesc": "Price: High to Low",
       "popular": "Most Popular",
@@ -66,11 +92,18 @@
       "title": "Filters",
       "priceRange": "Price Range",
       "category": "Category",
+      "featured": "Featured",
+      "allCategories": "All categories",
+      "all": "All",
+      "yes": "Yes",
+      "no": "No",
       "rating": "Rating",
       "inStock": "In Stock"
     },
     "addToCart": "Add to Cart",
     "addToWishlist": "Wishlist",
+    "removeFromWishlist": "Remove from wishlist",
+    "wishlistError": "Could not update wishlist",
     "outOfStock": "Out of Stock",
     "inStock": "{count} in stock",
     "compareAtPrice": "Original price",
@@ -81,7 +114,11 @@
     "description": "Description",
     "specifications": "Specifications",
     "selectVariant": "Select option",
-    "quantity": "Quantity"
+    "quantity": "Quantity",
+    "featuredBadge": "Featured",
+    "reviewsSection": "Reviews",
+    "verifiedPurchase": "Verified purchase",
+    "noReviewsLead": "Be the first to review after you receive your order."
   },
   "Cart": {
     "pageTitle": "Cart",
@@ -97,6 +134,9 @@
     "discount": "Discount",
     "total": "Total",
     "checkout": "Proceed to Checkout",
+    "viewCart": "View cart",
+    "increaseQuantity": "Increase quantity",
+    "decreaseQuantity": "Decrease quantity",
     "coupon": "Coupon code",
     "applyCoupon": "Apply",
     "couponApplied": "Coupon {code} applied",
@@ -131,7 +171,12 @@
     "newAddress": "Use a new address",
     "defaultAddress": "Default",
     "stripeMissingKey": "Stripe publishable key is not configured.",
-    "resultPending": "We're confirming your payment. Check Orders in a moment."
+    "resultPending": "We're confirming your payment. Check Orders in a moment.",
+    "errorSummaryTitle": "Please fix the following",
+    "orderCreated": "Order #{number} was created. Complete payment below or view it in",
+    "paymentFailedTitle": "Payment failed",
+    "paymentFailedMessage": "We couldn't process payment for order #{number}. You can retry from Orders.",
+    "backToCart": "Back to cart"
   },
   "Orders": {
     "pageTitle": "Order History",
@@ -154,8 +199,40 @@
     },
     "placedOn": "Placed on {date}",
     "total": "Total: {amount}",
-    "cancelOrder": "Cancel Order",
-    "trackOrder": "Track Order"
+    "cancelOrder": "Cancel order",
+    "cancelReason": "Cancellation reason (optional)",
+    "trackOrder": "Tracking number",
+    "loadError": "Could not load orders",
+    "shopNow": "Shop now",
+    "items": "Items",
+    "shipping": "Shipping",
+    "payment": "Payment",
+    "subtotal": "Subtotal",
+    "discount": "Discount",
+    "shippingFee": "Shipping fee",
+    "notes": "Notes",
+    "allStatuses": "All statuses",
+    "viewDetail": "View details",
+    "backToOrders": "All orders",
+    "returnTitle": "Return / exchange",
+    "returnLead": "You can request a return or exchange within 7 days of delivery.",
+    "returnType": "Request type",
+    "returnRefund": "Refund",
+    "returnExchange": "Exchange",
+    "returnReason": "Reason",
+    "returnSubmit": "Submit request",
+    "returnSubmitted": "Return request sent",
+    "returnStatus": {
+      "pending": "Pending review",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "completed": "Completed"
+    },
+    "provider": {
+      "cod": "Cash on delivery",
+      "stripe": "Card (Stripe)",
+      "vnpay": "VNPay"
+    }
   },
   "Account": {
     "pageTitle": "My Account",
@@ -171,8 +248,21 @@
     "newPassword": "New Password",
     "confirmPassword": "Confirm New Password",
     "addAddress": "Add Address",
+    "editAddress": "Edit address",
+    "saveAddress": "Save address",
+    "addressSaved": "Address saved",
+    "formErrorTitle": "There is a problem",
+    "recipientName": "Recipient name",
+    "addressLine1": "Address",
+    "addressLine2": "Address line 2",
+    "city": "City",
+    "state": "State / province",
+    "postalCode": "Postal code",
+    "countryCode": "Country",
     "defaultAddress": "Default Address",
-    "setDefault": "Set as Default"
+    "setDefault": "Set as Default",
+    "addressesEmpty": "No saved addresses yet",
+    "loadError": "Could not load account data"
   },
   "Auth": {
     "loginTitle": "Sign In",
@@ -186,6 +276,12 @@
     "rememberMe": "Remember me",
     "forgotPassword": "Forgot password?",
     "loginButton": "Sign In",
+    "staffLoginButton": "Sign in to workspace",
+    "staffLoginTitle": "Staff sign in",
+    "staffLoginLead": "For admin, warehouse, support, and content roles.",
+    "staffLoginLink": "Staff sign in",
+    "staffWorkspaceLabel": "Server",
+    "staffBackToShop": "Back to shop",
     "registerButton": "Create Account",
     "loginSubmitting": "Signing in...",
     "registerSubmitting": "Creating account...",
@@ -205,16 +301,21 @@
       "passwordRequired": "Enter a password",
       "nameRequired": "Enter your full name",
       "confirmRequired": "Confirm your password",
-      "passwordMismatch": "Passwords do not match"
+      "passwordMismatch": "Passwords do not match",
+      "staffAccessRequired": "This account is not authorized for staff access",
+      "staffUseStaffPortal": "Staff accounts must sign in on the staff portal."
     }
   },
   "Wishlist": {
     "pageTitle": "Wishlist",
     "empty": "Your wishlist is empty",
-    "emptyDescription": "Save products you love to buy later!"
+    "emptyDescription": "Save products you love to buy later!",
+    "loadError": "Could not load wishlist",
+    "browseProducts": "Browse products"
   },
   "Blog": {
     "pageTitle": "Blog",
+    "searchPlaceholder": "Search posts...",
     "readMore": "Read more",
     "publishedOn": "Published {date}",
     "by": "by {author}",
@@ -224,11 +325,14 @@
   "Admin": {
     "dashboard": "Dashboard",
     "products": "Products",
+    "inventory": "Inventory",
+    "workspace": "Staff",
     "orders": "Orders",
     "customers": "Customers",
     "blog": "Blog",
     "media": "Media Library",
     "settings": "Settings",
+    "auditLogs": "Audit log",
     "stats": {
       "totalRevenue": "Revenue",
       "totalOrders": "Orders",
@@ -238,7 +342,228 @@
     "recentOrders": "Recent Orders",
     "createProduct": "Add Product",
     "editProduct": "Edit Product",
-    "deleteConfirm": "Are you sure you want to delete this?"
+    "deleteConfirm": "Are you sure you want to delete this?",
+    "trackingRequired": "Enter a tracking number before marking the order shipped.",
+    "orderDetail": "Order detail",
+    "markShipped": "Mark as shipped",
+    "returns": {
+      "title": "Return / exchange requests",
+      "approve": "Approve",
+      "reject": "Reject",
+      "adminNote": "Staff note",
+      "none": "No return requests"
+    },
+    "exchangeRate": "Exchange rate (USD → VND)",
+    "exchangeRateHint": "Storefront shows VND when locale is VI and USD when EN. Catalog prices are stored in USD.",
+    "columns": {
+      "product": "Product",
+      "category": "Category",
+      "variants": "Variants",
+      "price": "Price",
+      "stock": "Stock",
+      "sku": "SKU",
+      "status": "Status",
+      "featured": "Featured",
+      "option": "Option",
+      "priceModifier": "Price modifier",
+      "orderNumber": "Order #",
+      "orderStatus": "Status",
+      "total": "Total",
+      "tracking": "Tracking number",
+      "date": "Date",
+      "actions": "Actions",
+      "customerName": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "specName": "Spec",
+      "specValue": "Value"
+    },
+    "sections": {
+      "general": "General",
+      "pricing": "Pricing",
+      "inventory": "Inventory",
+      "meta": "System",
+      "translations": "Translations",
+      "variants": "Variants",
+      "specifications": "Specifications",
+      "images": "Images"
+    },
+    "labels": {
+      "createdAt": "Created",
+      "updatedAt": "Updated",
+      "compareAt": "Compare at",
+      "noVariants": "No variants for this product",
+      "productType": "Product type",
+      "externalId": "Import source ID",
+      "shortDescription": "Short description"
+    },
+    "productType": {
+      "simple": "Simple",
+      "variable": "Variable",
+      "grouped": "Grouped",
+      "external": "External",
+      "variation": "Variation"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "featured": "Featured"
+    },
+    "actions": {
+      "activate": "Activate",
+      "deactivate": "Deactivate"
+    },
+    "form": {
+      "errorTitle": "Could not save the product",
+      "nameVi": "Product name (VI)",
+      "nameEn": "Product name (EN)",
+      "primaryCategory": "Primary category",
+      "extraCategories": "Additional categories",
+      "selectCategory": "Select a category",
+      "publishNow": "Publish now",
+      "currency": "Currency",
+      "salePrice": "Sale price",
+      "regularPrice": "Compare-at price",
+      "shortVi": "Short description (VI)",
+      "shortEn": "Short description (EN)",
+      "descVi": "Full description (VI)",
+      "descEn": "Full description (EN)",
+      "uploadImages": "Upload images",
+      "uploading": "Uploading...",
+      "imageUrl": "Or paste an image URL",
+      "addUrl": "Add URL",
+      "noImages": "No images yet. At least one image is required to publish.",
+      "primaryImage": "Primary image",
+      "invalidImageUrl": "Invalid image URL",
+      "unit": "Unit",
+      "addSpec": "Add specification",
+      "addVariant": "Add variant",
+      "optionName": "Option (e.g. Color)",
+      "optionValue": "Value (e.g. Red)",
+      "nameRequired": "Enter a product name",
+      "slugRequired": "Enter a slug",
+      "skuRequired": "Enter a SKU",
+      "categoryRequired": "Select a category",
+      "priceRequired": "Enter a sale price greater than 0",
+      "imageRequiredToPublish": "Upload at least one image before publishing"
+    },
+    "filters": {
+      "clear": "Clear filters",
+      "resultsCount": "{count} results",
+      "searchProductPlaceholder": "Search name, SKU or slug...",
+      "searchOrderPlaceholder": "Search order number...",
+      "searchCustomerPlaceholder": "Search name, email or phone...",
+      "allCategories": "All categories",
+      "allStatuses": "All statuses",
+      "allStock": "All stock",
+      "inStockOnly": "In stock",
+      "outOfStockOnly": "Out of stock",
+      "allFeatured": "All",
+      "sortNewest": "Newest",
+      "sortName": "Name A → Z",
+      "sortPriceAsc": "Price low to high",
+      "sortPriceDesc": "Price high to low"
+    },
+    "stock": {
+      "title": "Inventory",
+      "lead": "Receive stock, adjust quantities, and set alerts. Selling prices are not shown.",
+      "catalogHint": "Adjust stock on the Inventory page. Catalog edit does not overwrite quantity.",
+      "alerts": "Stock alerts",
+      "lowStock": "Low stock",
+      "lowStockOnly": "Low stock only (threshold set)",
+      "threshold": "Alert threshold",
+      "adjustTitle": "Adjust stock",
+      "alertTitle": "Alert threshold",
+      "type": "Transaction type",
+      "direction": "Direction",
+      "quantity": "Quantity",
+      "note": "Note",
+      "apply": "Apply",
+      "saveAlert": "Save threshold",
+      "history": "Recent history",
+      "selectLine": "Select a SKU row to receive stock or set a threshold.",
+      "types": {
+        "purchase": "Purchase",
+        "adjustment": "Adjustment",
+        "damage": "Damage",
+        "sale": "Sale",
+        "return": "Return"
+      },
+      "directions": {
+        "in": "Increase",
+        "out": "Decrease"
+      }
+    },
+    "audit": {
+      "title": "Audit log",
+      "lead": "Recorded staff actions. Passwords and tokens are redacted. ADMIN cannot see rows marked sensitive.",
+      "action": "Action",
+      "resource": "Resource",
+      "actor": "Actor",
+      "when": "When",
+      "detail": "Detail",
+      "ip": "IP",
+      "sensitive": "Sensitive",
+      "allActions": "All actions",
+      "allResources": "All resources",
+      "from": "From",
+      "to": "To",
+      "selectRow": "Select a row to inspect the redacted payload.",
+      "oldValue": "Before",
+      "newValue": "After",
+      "resources": {
+        "Product": "Product",
+        "ProductVariant": "Variant",
+        "Category": "Category",
+        "Order": "Order",
+        "OrderReturnRequest": "Return request",
+        "Inventory": "Inventory",
+        "StockAlert": "Stock alert",
+        "Coupon": "Coupon",
+        "Payment": "Payment",
+        "Setting": "Setting",
+        "FeatureFlag": "Feature flag",
+        "BlogPost": "Blog post",
+        "BlogCategory": "Blog category",
+        "Page": "CMS page",
+        "Media": "Media",
+        "ProductReview": "Review",
+        "Auth": "Sign-in"
+      },
+      "actions": {
+        "STAFF_LOGIN": "Staff sign-in",
+        "CREATE_PRODUCT": "Create product",
+        "UPDATE_PRODUCT": "Update product",
+        "DELETE_PRODUCT": "Delete product",
+        "TOGGLE_PRODUCT_ACTIVE": "Toggle product active",
+        "CREATE_VARIANT": "Add variant",
+        "CREATE_CATEGORY": "Create category",
+        "UPDATE_CATEGORY": "Update category",
+        "DELETE_CATEGORY": "Delete category",
+        "UPDATE_ORDER_STATUS": "Update order status",
+        "CANCEL_ORDER": "Cancel order",
+        "REVIEW_RETURN_REQUEST": "Review return request",
+        "ADJUST_STOCK": "Adjust stock",
+        "UPSERT_STOCK_ALERT": "Save stock alert",
+        "CREATE_COUPON": "Create coupon",
+        "UPDATE_COUPON": "Update coupon",
+        "DELETE_COUPON": "Delete coupon",
+        "REFUND_PAYMENT": "Refund payment",
+        "UPDATE_SETTING": "Update setting",
+        "TOGGLE_FEATURE_FLAG": "Toggle feature flag",
+        "CREATE_BLOG_POST": "Create blog post",
+        "UPDATE_BLOG_POST": "Update blog post",
+        "DELETE_BLOG_POST": "Delete blog post",
+        "CREATE_BLOG_CATEGORY": "Create blog category",
+        "CREATE_PAGE": "Create page",
+        "UPDATE_PAGE": "Update page",
+        "DELETE_PAGE": "Delete page",
+        "UPLOAD_MEDIA": "Upload media",
+        "UPLOAD_MEDIA_BULK": "Bulk upload media",
+        "DELETE_MEDIA": "Delete media",
+        "MODERATE_REVIEW": "Moderate review"
+      }
+    }
   },
   "Errors": {
     "404": "Page Not Found",

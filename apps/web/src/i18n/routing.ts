@@ -19,7 +19,13 @@ export const routing = defineRouting({
     '/blog/[slug]': { vi: '/blog/[slug]', en: '/blog/[slug]' },
     '/account': { vi: '/tai-khoan', en: '/account' },
     '/auth/login': { vi: '/dang-nhap', en: '/auth/login' },
+    '/auth/staff-login': { vi: '/dang-nhap-nhan-vien', en: '/auth/staff-login' },
     '/auth/register': { vi: '/dang-ky', en: '/auth/register' },
+    '/admin/dashboard': { vi: '/admin/dashboard', en: '/admin/dashboard' },
+    '/admin/inventory': { vi: '/admin/inventory', en: '/admin/inventory' },
+    '/admin/audit-logs': { vi: '/admin/audit-logs', en: '/admin/audit-logs' },
+    '/admin/orders': { vi: '/admin/orders', en: '/admin/orders' },
+    '/admin/orders/[id]': { vi: '/admin/orders/[id]', en: '/admin/orders/[id]' },
   },
 });
 

@@ -24,7 +24,8 @@
     "noResults": "Không tìm thấy kết quả",
     "required": "Trường này là bắt buộc",
     "optional": "(tùy chọn)",
-    "or": "hoặc"
+    "or": "hoặc",
+    "pagination": "Phân trang"
   },
   "Nav": {
     "home": "Trang chủ",
@@ -38,7 +39,9 @@
     "login": "Đăng nhập",
     "register": "Đăng ký",
     "logout": "Đăng xuất",
-    "admin": "Quản trị"
+    "admin": "Quản trị",
+    "openMenu": "Mở menu",
+    "closeMenu": "Đóng menu"
   },
   "Home": {
     "title": "Chào mừng đến My Shop",
@@ -50,13 +53,36 @@
     "featuredProducts": "Sản phẩm nổi bật",
     "newArrivals": "Hàng mới về",
     "topCategories": "Danh mục phổ biến",
-    "latestPosts": "Bài viết mới nhất"
+    "categoriesLead": "Khám phá theo danh mục bạn quan tâm",
+    "latestPosts": "Bài viết mới nhất",
+    "trust": {
+      "title": "Cam kết mua sắm",
+      "shipping": {
+        "title": "Giao hàng nhanh",
+        "body": "Toàn quốc & quốc tế"
+      },
+      "secure": {
+        "title": "Thanh toán an toàn",
+        "body": "Stripe & VNPay bảo mật"
+      },
+      "payment": {
+        "title": "Nhiều hình thức",
+        "body": "Thẻ, VNPay, COD"
+      },
+      "returns": {
+        "title": "Hỗ trợ đơn hàng",
+        "body": "Theo dõi & hủy dễ dàng"
+      }
+    }
   },
   "Products": {
     "pageTitle": "Sản phẩm",
+    "searchPlaceholder": "Tìm tên sản phẩm...",
+    "resultsCount": "{count} sản phẩm",
     "sortBy": "Sắp xếp theo",
     "sortOptions": {
       "newest": "Mới nhất",
+      "nameAsc": "Tên A → Z",
       "priceAsc": "Giá tăng dần",
       "priceDesc": "Giá giảm dần",
       "popular": "Phổ biến nhất",
@@ -66,11 +92,18 @@
       "title": "Bộ lọc",
       "priceRange": "Khoảng giá",
       "category": "Danh mục",
+      "featured": "Nổi bật",
+      "allCategories": "Tất cả danh mục",
+      "all": "Tất cả",
+      "yes": "Có",
+      "no": "Không",
       "rating": "Đánh giá",
       "inStock": "Còn hàng"
     },
     "addToCart": "Thêm vào giỏ",
     "addToWishlist": "Yêu thích",
+    "removeFromWishlist": "Bỏ yêu thích",
+    "wishlistError": "Không thể cập nhật danh sách yêu thích",
     "outOfStock": "Hết hàng",
     "inStock": "Còn {count} sản phẩm",
     "compareAtPrice": "Giá gốc",
@@ -81,7 +114,11 @@
     "description": "Mô tả sản phẩm",
     "specifications": "Thông số kỹ thuật",
     "selectVariant": "Chọn phân loại",
-    "quantity": "Số lượng"
+    "quantity": "Số lượng",
+    "featuredBadge": "Nổi bật",
+    "reviewsSection": "Đánh giá",
+    "verifiedPurchase": "Đã mua hàng",
+    "noReviewsLead": "Hãy là người đầu tiên đánh giá sau khi nhận sản phẩm."
   },
   "Cart": {
     "pageTitle": "Giỏ hàng",
@@ -97,6 +134,9 @@
     "discount": "Giảm giá",
     "total": "Tổng cộng",
     "checkout": "Tiến hành thanh toán",
+    "viewCart": "Xem giỏ hàng",
+    "increaseQuantity": "Tăng số lượng",
+    "decreaseQuantity": "Giảm số lượng",
     "coupon": "Mã giảm giá",
     "applyCoupon": "Áp dụng",
     "couponApplied": "Đã áp dụng mã {code}",
@@ -131,7 +171,12 @@
     "newAddress": "Dùng địa chỉ mới",
     "defaultAddress": "Mặc định",
     "stripeMissingKey": "Chưa cấu hình khóa công khai Stripe.",
-    "resultPending": "Hệ thống đang xác nhận thanh toán. Hãy kiểm tra Đơn hàng sau giây lát."
+    "resultPending": "Hệ thống đang xác nhận thanh toán. Hãy kiểm tra Đơn hàng sau giây lát.",
+    "errorSummaryTitle": "Có lỗi cần sửa",
+    "orderCreated": "Đơn hàng #{number} đã được tạo. Hoàn tất thanh toán bên dưới hoặc xem trong",
+    "paymentFailedTitle": "Thanh toán thất bại",
+    "paymentFailedMessage": "Không thể thanh toán đơn #{number}. Bạn có thể thử lại trong mục Đơn hàng.",
+    "backToCart": "Quay lại giỏ hàng"
   },
   "Orders": {
     "pageTitle": "Lịch sử đơn hàng",
@@ -155,7 +200,39 @@
     "placedOn": "Đặt ngày {date}",
     "total": "Tổng: {amount}",
     "cancelOrder": "Hủy đơn hàng",
-    "trackOrder": "Theo dõi đơn hàng"
+    "cancelReason": "Lý do hủy (không bắt buộc)",
+    "trackOrder": "Mã vận đơn",
+    "loadError": "Không tải được đơn hàng",
+    "shopNow": "Mua sắm ngay",
+    "items": "Sản phẩm",
+    "shipping": "Giao hàng",
+    "payment": "Thanh toán",
+    "subtotal": "Tạm tính",
+    "discount": "Giảm giá",
+    "shippingFee": "Phí vận chuyển",
+    "notes": "Ghi chú",
+    "allStatuses": "Mọi trạng thái",
+    "viewDetail": "Xem chi tiết",
+    "backToOrders": "Danh sách đơn hàng",
+    "returnTitle": "Đổi / trả hàng",
+    "returnLead": "Bạn có 7 ngày sau khi giao để gửi yêu cầu đổi hoặc hoàn tiền.",
+    "returnType": "Loại yêu cầu",
+    "returnRefund": "Hoàn tiền",
+    "returnExchange": "Đổi hàng",
+    "returnReason": "Lý do",
+    "returnSubmit": "Gửi yêu cầu",
+    "returnSubmitted": "Đã gửi yêu cầu đổi/trả",
+    "returnStatus": {
+      "pending": "Chờ duyệt",
+      "approved": "Đã duyệt",
+      "rejected": "Từ chối",
+      "completed": "Đã xử lý"
+    },
+    "provider": {
+      "cod": "COD",
+      "stripe": "Thẻ (Stripe)",
+      "vnpay": "VNPay"
+    }
   },
   "Account": {
     "pageTitle": "Tài khoản",
@@ -171,8 +248,21 @@
     "newPassword": "Mật khẩu mới",
     "confirmPassword": "Xác nhận mật khẩu mới",
     "addAddress": "Thêm địa chỉ",
+    "editAddress": "Sửa địa chỉ",
+    "saveAddress": "Lưu địa chỉ",
+    "addressSaved": "Đã lưu địa chỉ",
+    "formErrorTitle": "Có lỗi cần sửa",
+    "recipientName": "Họ tên người nhận",
+    "addressLine1": "Địa chỉ",
+    "addressLine2": "Phường / xã",
+    "city": "Quận / huyện",
+    "state": "Tỉnh / thành phố",
+    "postalCode": "Mã bưu điện",
+    "countryCode": "Quốc gia",
     "defaultAddress": "Địa chỉ mặc định",
-    "setDefault": "Đặt làm mặc định"
+    "setDefault": "Đặt làm mặc định",
+    "addressesEmpty": "Chưa có địa chỉ giao hàng",
+    "loadError": "Không tải được thông tin"
   },
   "Auth": {
     "loginTitle": "Đăng nhập",
@@ -186,6 +276,12 @@
     "rememberMe": "Ghi nhớ đăng nhập",
     "forgotPassword": "Quên mật khẩu?",
     "loginButton": "Đăng nhập",
+    "staffLoginButton": "Đăng nhập hệ thống",
+    "staffLoginTitle": "Đăng nhập nhân viên",
+    "staffLoginLead": "Dành cho admin, kho, hỗ trợ và biên tập nội dung.",
+    "staffLoginLink": "Đăng nhập nhân viên",
+    "staffWorkspaceLabel": "Máy chủ",
+    "staffBackToShop": "Về cửa hàng",
     "registerButton": "Đăng ký",
     "loginSubmitting": "Đang đăng nhập...",
     "registerSubmitting": "Đang tạo tài khoản...",
@@ -205,16 +301,21 @@
       "passwordRequired": "Nhập mật khẩu",
       "nameRequired": "Nhập họ và tên",
       "confirmRequired": "Xác nhận mật khẩu",
-      "passwordMismatch": "Mật khẩu xác nhận không khớp"
+      "passwordMismatch": "Mật khẩu xác nhận không khớp",
+      "staffAccessRequired": "Tài khoản này không có quyền truy cập khu vực nhân viên",
+      "staffUseStaffPortal": "Tài khoản nhân viên cần đăng nhập tại đường dẫn nhân viên."
     }
   },
   "Wishlist": {
     "pageTitle": "Danh sách yêu thích",
     "empty": "Danh sách yêu thích trống",
-    "emptyDescription": "Lưu những sản phẩm bạn thích để mua sau!"
+    "emptyDescription": "Lưu những sản phẩm bạn thích để mua sau!",
+    "loadError": "Không tải được danh sách yêu thích",
+    "browseProducts": "Xem sản phẩm"
   },
   "Blog": {
     "pageTitle": "Blog",
+    "searchPlaceholder": "Tìm bài viết...",
     "readMore": "Đọc thêm",
     "publishedOn": "Đăng ngày {date}",
     "by": "bởi {author}",
@@ -224,11 +325,14 @@
   "Admin": {
     "dashboard": "Bảng điều khiển",
     "products": "Sản phẩm",
+    "inventory": "Kho hàng",
+    "workspace": "Nội bộ",
     "orders": "Đơn hàng",
     "customers": "Khách hàng",
     "blog": "Blog",
     "media": "Thư viện media",
     "settings": "Cài đặt",
+    "auditLogs": "Nhật ký hệ thống",
     "stats": {
       "totalRevenue": "Doanh thu",
       "totalOrders": "Đơn hàng",
@@ -238,7 +342,228 @@
     "recentOrders": "Đơn hàng gần đây",
     "createProduct": "Thêm sản phẩm",
     "editProduct": "Chỉnh sửa sản phẩm",
-    "deleteConfirm": "Bạn có chắc chắn muốn xóa?"
+    "deleteConfirm": "Bạn có chắc chắn muốn xóa?",
+    "trackingRequired": "Nhập mã vận đơn trước khi chuyển sang đã gửi.",
+    "orderDetail": "Chi tiết đơn hàng",
+    "markShipped": "Xác nhận gửi hàng",
+    "returns": {
+      "title": "Yêu cầu đổi / trả",
+      "approve": "Duyệt",
+      "reject": "Từ chối",
+      "adminNote": "Ghi chú xử lý",
+      "none": "Chưa có yêu cầu đổi/trả"
+    },
+    "exchangeRate": "Tỉ giá (USD → VND)",
+    "exchangeRateHint": "Chọn VI thì hiển thị VND, chọn EN thì USD. Giá gốc trong catalog lưu bằng USD.",
+    "columns": {
+      "product": "Sản phẩm",
+      "category": "Danh mục",
+      "variants": "Biến thể",
+      "price": "Giá",
+      "stock": "Tồn kho",
+      "sku": "SKU",
+      "status": "Trạng thái",
+      "featured": "Nổi bật",
+      "option": "Phân loại",
+      "priceModifier": "Chênh giá",
+      "orderNumber": "Mã đơn",
+      "orderStatus": "Trạng thái đơn",
+      "total": "Tổng tiền",
+      "tracking": "Mã vận đơn",
+      "date": "Ngày tạo",
+      "actions": "Thao tác",
+      "customerName": "Họ tên",
+      "email": "Email",
+      "phone": "Điện thoại",
+      "specName": "Thông số",
+      "specValue": "Chi tiết"
+    },
+    "sections": {
+      "general": "Thông tin chung",
+      "pricing": "Giá bán",
+      "inventory": "Kho hàng",
+      "meta": "Hệ thống",
+      "translations": "Bản dịch",
+      "variants": "Biến thể (Variant)",
+      "specifications": "Thông số kỹ thuật",
+      "images": "Hình ảnh"
+    },
+    "labels": {
+      "createdAt": "Ngày tạo",
+      "updatedAt": "Cập nhật",
+      "compareAt": "Giá gốc",
+      "noVariants": "Sản phẩm chưa có biến thể",
+      "productType": "Loại sản phẩm",
+      "externalId": "Mã nguồn import",
+      "shortDescription": "Mô tả ngắn"
+    },
+    "productType": {
+      "simple": "Đơn giản",
+      "variable": "Có biến thể",
+      "grouped": "Nhóm",
+      "external": "Liên kết ngoài",
+      "variation": "Biến thể"
+    },
+    "status": {
+      "active": "Đang bán",
+      "inactive": "Ẩn",
+      "featured": "Nổi bật"
+    },
+    "actions": {
+      "activate": "Bật",
+      "deactivate": "Tắt"
+    },
+    "form": {
+      "errorTitle": "Không thể lưu sản phẩm",
+      "nameVi": "Tên sản phẩm (VI)",
+      "nameEn": "Tên sản phẩm (EN)",
+      "primaryCategory": "Danh mục chính",
+      "extraCategories": "Danh mục bổ sung",
+      "selectCategory": "Chọn danh mục",
+      "publishNow": "Đăng bán ngay",
+      "currency": "Tiền tệ",
+      "salePrice": "Giá bán",
+      "regularPrice": "Giá gốc (gạch ngang)",
+      "shortVi": "Mô tả ngắn (VI)",
+      "shortEn": "Mô tả ngắn (EN)",
+      "descVi": "Mô tả đầy đủ (VI)",
+      "descEn": "Mô tả đầy đủ (EN)",
+      "uploadImages": "Tải ảnh lên",
+      "uploading": "Đang tải ảnh...",
+      "imageUrl": "Hoặc dán URL ảnh",
+      "addUrl": "Thêm URL",
+      "noImages": "Chưa có ảnh. Cần ít nhất 1 ảnh để đăng bán.",
+      "primaryImage": "Ảnh đại diện",
+      "invalidImageUrl": "URL ảnh không hợp lệ",
+      "unit": "Đơn vị",
+      "addSpec": "Thêm thông số",
+      "addVariant": "Thêm biến thể",
+      "optionName": "Thuộc tính (vd: Màu)",
+      "optionValue": "Giá trị (vd: Đỏ)",
+      "nameRequired": "Nhập tên sản phẩm",
+      "slugRequired": "Nhập slug",
+      "skuRequired": "Nhập SKU",
+      "categoryRequired": "Chọn danh mục",
+      "priceRequired": "Nhập giá bán lớn hơn 0",
+      "imageRequiredToPublish": "Cần tải ít nhất 1 ảnh trước khi đăng bán"
+    },
+    "filters": {
+      "clear": "Xóa bộ lọc",
+      "resultsCount": "{count} kết quả",
+      "searchProductPlaceholder": "Tìm tên, SKU hoặc slug...",
+      "searchOrderPlaceholder": "Tìm mã đơn hàng...",
+      "searchCustomerPlaceholder": "Tìm tên, email hoặc SĐT...",
+      "allCategories": "Tất cả danh mục",
+      "allStatuses": "Tất cả trạng thái",
+      "allStock": "Tất cả tồn kho",
+      "inStockOnly": "Còn hàng",
+      "outOfStockOnly": "Hết hàng",
+      "allFeatured": "Tất cả",
+      "sortNewest": "Mới nhất",
+      "sortName": "Tên A → Z",
+      "sortPriceAsc": "Giá tăng dần",
+      "sortPriceDesc": "Giá giảm dần"
+    },
+    "stock": {
+      "title": "Kho hàng",
+      "lead": "Nhập kho, điều chỉnh tồn và cảnh báo. Không hiển thị giá bán.",
+      "catalogHint": "Tồn kho chỉnh trên màn Kho hàng, không ghi đè trên form sản phẩm.",
+      "alerts": "Cảnh báo tồn",
+      "lowStock": "Sắp hết",
+      "lowStockOnly": "Chỉ sắp hết (đã đặt ngưỡng)",
+      "threshold": "Ngưỡng cảnh báo",
+      "adjustTitle": "Điều chỉnh tồn",
+      "alertTitle": "Ngưỡng cảnh báo",
+      "type": "Loại giao dịch",
+      "direction": "Chiều",
+      "quantity": "Số lượng",
+      "note": "Ghi chú",
+      "apply": "Ghi nhận",
+      "saveAlert": "Lưu ngưỡng",
+      "history": "Lịch sử gần đây",
+      "selectLine": "Chọn một dòng SKU để nhập kho hoặc đặt ngưỡng.",
+      "types": {
+        "purchase": "Nhập kho",
+        "adjustment": "Điều chỉnh",
+        "damage": "Hư hỏng",
+        "sale": "Bán",
+        "return": "Hoàn kho"
+      },
+      "directions": {
+        "in": "Tăng",
+        "out": "Giảm"
+      }
+    },
+    "audit": {
+      "title": "Nhật ký hệ thống",
+      "lead": "Thao tác quản trị đã ghi nhận. Mật khẩu và token bị ẩn. ADMIN không thấy bản ghi đánh dấu nhạy cảm.",
+      "action": "Hành động",
+      "resource": "Tài nguyên",
+      "actor": "Người thực hiện",
+      "when": "Thời điểm",
+      "detail": "Chi tiết",
+      "ip": "IP",
+      "sensitive": "Nhạy cảm",
+      "allActions": "Mọi hành động",
+      "allResources": "Mọi tài nguyên",
+      "from": "Từ ngày",
+      "to": "Đến ngày",
+      "selectRow": "Chọn một dòng để xem payload đã ẩn bí mật.",
+      "oldValue": "Trước",
+      "newValue": "Sau",
+      "resources": {
+        "Product": "Sản phẩm",
+        "ProductVariant": "Biến thể",
+        "Category": "Danh mục",
+        "Order": "Đơn hàng",
+        "OrderReturnRequest": "Đổi/trả",
+        "Inventory": "Kho",
+        "StockAlert": "Cảnh báo tồn",
+        "Coupon": "Mã giảm giá",
+        "Payment": "Thanh toán",
+        "Setting": "Cài đặt",
+        "FeatureFlag": "Cờ tính năng",
+        "BlogPost": "Bài viết",
+        "BlogCategory": "Danh mục blog",
+        "Page": "Trang CMS",
+        "Media": "Media",
+        "ProductReview": "Đánh giá",
+        "Auth": "Đăng nhập"
+      },
+      "actions": {
+        "STAFF_LOGIN": "Đăng nhập nhân viên",
+        "CREATE_PRODUCT": "Tạo sản phẩm",
+        "UPDATE_PRODUCT": "Sửa sản phẩm",
+        "DELETE_PRODUCT": "Xóa sản phẩm",
+        "TOGGLE_PRODUCT_ACTIVE": "Bật/tắt sản phẩm",
+        "CREATE_VARIANT": "Thêm biến thể",
+        "CREATE_CATEGORY": "Tạo danh mục",
+        "UPDATE_CATEGORY": "Sửa danh mục",
+        "DELETE_CATEGORY": "Xóa danh mục",
+        "UPDATE_ORDER_STATUS": "Đổi trạng thái đơn",
+        "CANCEL_ORDER": "Hủy đơn",
+        "REVIEW_RETURN_REQUEST": "Duyệt đổi/trả",
+        "ADJUST_STOCK": "Điều chỉnh tồn",
+        "UPSERT_STOCK_ALERT": "Lưu ngưỡng tồn",
+        "CREATE_COUPON": "Tạo mã giảm giá",
+        "UPDATE_COUPON": "Sửa mã giảm giá",
+        "DELETE_COUPON": "Xóa mã giảm giá",
+        "REFUND_PAYMENT": "Hoàn tiền",
+        "UPDATE_SETTING": "Sửa cài đặt",
+        "TOGGLE_FEATURE_FLAG": "Bật/tắt cờ tính năng",
+        "CREATE_BLOG_POST": "Tạo bài viết",
+        "UPDATE_BLOG_POST": "Sửa bài viết",
+        "DELETE_BLOG_POST": "Xóa bài viết",
+        "CREATE_BLOG_CATEGORY": "Tạo danh mục blog",
+        "CREATE_PAGE": "Tạo trang",
+        "UPDATE_PAGE": "Sửa trang",
+        "DELETE_PAGE": "Xóa trang",
+        "UPLOAD_MEDIA": "Tải media",
+        "UPLOAD_MEDIA_BULK": "Tải media hàng loạt",
+        "DELETE_MEDIA": "Xóa media",
+        "MODERATE_REVIEW": "Duyệt đánh giá"
+      }
+    }
   },
   "Errors": {
     "404": "Trang không tìm thấy",

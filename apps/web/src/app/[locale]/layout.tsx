@@ -1,22 +1,18 @@
 import type { Metadata } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations } from 'next-intl/server';
-import { Nunito_Sans, Rubik } from 'next/font/google';
+import { Roboto } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { Providers } from '@/components/providers';
 import { routing } from '@/i18n/routing';
 import '@/app/globals.css';
 
-const nunitoSans = Nunito_Sans({
-  subsets: ['latin', 'vietnamese'],
+/** Roboto: latin/latin-ext for EN, vietnamese for VI diacritics (ă â ê ô ơ ư đ + tones). */
+const roboto = Roboto({
+  subsets: ['latin', 'latin-ext', 'vietnamese'],
+  weight: ['300', '400', '500', '700'],
+  display: 'swap',
   variable: '--font-sans',
-  display: 'swap',
-});
-
-const rubik = Rubik({
-  subsets: ['latin', 'latin-ext'],
-  variable: '--font-heading',
-  display: 'swap',
 });
 
 export async function generateStaticParams() {
@@ -55,7 +51,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body className={`${nunitoSans.variable} ${rubik.variable} ${nunitoSans.className} bg-white`}>
+      <body className={`${roboto.variable} ${roboto.className} bg-white`}>
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>
