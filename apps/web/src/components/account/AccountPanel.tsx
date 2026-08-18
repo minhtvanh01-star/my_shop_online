@@ -1,41 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import api, { getApiError } from '@/lib/api';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ctaClassName } from '@/lib/brand';
 import { useAuthStore, useCurrentUser } from '@/stores/authStore';
-
-type ApiAddress = {
-  id: string;
-  recipientName: string;
-  phone: string | null;
-  addressLine1: string;
-  city: string;
-  countryCode: string;
-  isDefault: boolean;
-};
+import { AddressBook } from '@/components/account/AddressBook';
 
 export function AccountPanel() {
   const t = useTranslations('Account');
-  const common = useTranslations('Common');
   const user = useCurrentUser();
   const updateUser = useAuthStore((s) => s.updateUser);
-  const queryClient = useQueryClient();
   const [fullName, setFullName] = useState(user?.fullName ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  const addresses = useQuery({
-    queryKey: ['addresses'],
-    queryFn: () => api.get<{ data: ApiAddress[] }>('/users/me/addresses').then((r) => r.data.data),
-  });
 
   const saveProfile = useMutation({
     mutationFn: () => api.put('/users/me', { fullName, phone: phone || undefined }),
@@ -56,11 +40,6 @@ export function AccountPanel() {
       setError(null);
     },
     onError: (err) => setError(getApiError(err)),
-  });
-
-  const removeAddress = useMutation({
-    mutationFn: (id: string) => api.delete(`/users/me/addresses/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['addresses'] }),
   });
 
   return (
@@ -119,26 +98,7 @@ export function AccountPanel() {
         </div>
       </section>
 
-      <section>
-        <h2 className="font-heading text-xl">{t('addresses')}</h2>
-        <ul className="mt-4 space-y-3">
-          {(addresses.data ?? []).map((address) => (
-            <li key={address.id} className="flex items-start justify-between gap-4 border-b border-[#E2E8F0] pb-3">
-              <p className="text-sm">
-                {address.recipientName}, {address.addressLine1}, {address.city}, {address.countryCode}
-                {address.isDefault ? ` — ${t('defaultAddress')}` : ''}
-              </p>
-              <button
-                type="button"
-                className="text-sm text-[#DC2626]"
-                onClick={() => removeAddress.mutate(address.id)}
-              >
-                {common('delete')}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <AddressBook />
     </div>
   );
 }
