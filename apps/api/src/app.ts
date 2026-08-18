@@ -3,6 +3,7 @@ import compression from 'compression';
 import cors from 'cors';
 import 'dotenv/config';
 import express, { Application } from 'express';
+import path from 'path';
 import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -28,6 +29,7 @@ import mediaRoutes from './modules/media/media.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import settingsRoutes from './modules/settings/settings.routes';
 import couponRoutes from './modules/coupons/coupons.routes';
+import inventoryRoutes from './modules/inventory/inventory.routes';
 
 const app: Application = express();
 const V1 = '/api/v1';
@@ -71,6 +73,15 @@ if (env.NODE_ENV !== 'test') {
   app.use(morgan(env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 }
 
+app.use(
+  '/uploads',
+  (_req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+  },
+  express.static(path.resolve(process.cwd(), 'uploads')),
+);
+
 // ── Health check ──────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), env: env.NODE_ENV });
@@ -92,6 +103,7 @@ app.use(`${V1}/media`, mediaRoutes);
 app.use(`${V1}/admin`, adminRoutes);
 app.use(`${V1}/settings`, settingsRoutes);
 app.use(`${V1}/coupons`, couponRoutes);
+app.use(`${V1}/inventory`, inventoryRoutes);
 
 // ── Error handling ────────────────────────────────────────────────────────────
 app.use(notFoundHandler);

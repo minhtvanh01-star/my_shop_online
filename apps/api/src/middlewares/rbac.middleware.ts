@@ -15,3 +15,5 @@ export function requireRole(...roles: string[]) {
 
 export const requireAdmin = requireRole('ADMIN', 'SUPER_ADMIN');
 export const requireSuperAdmin = requireRole('SUPER_ADMIN');
+export const requireInventory = requireRole('WAREHOUSE', 'ADMIN', 'SUPER_ADMIN');
+export const requireOrderOps = requireRole('WAREHOUSE', 'SUPPORT', 'ADMIN', 'SUPER_ADMIN');
