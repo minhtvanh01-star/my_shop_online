@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import api, { tokenManager } from '@/lib/api';
 import { mergeGuestCartToServer } from '@/hooks/useCart';
+import { isStaffRole } from '@/lib/roles';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
 import type { User, UserRole } from '@/types';
@@ -11,6 +12,7 @@ import type { User, UserRole } from '@/types';
 interface LoginCredentials {
   email: string;
   password: string;
+  portal?: 'customer' | 'staff';
 }
 
 interface RegisterData {
@@ -45,11 +47,17 @@ export function useLogin() {
 
   return useMutation({
     mutationFn: (creds: LoginCredentials) =>
-      api.post<{ data: AuthPayload }>('/auth/login', creds).then((r) => r.data.data),
+      api
+        .post<{ data: AuthPayload }>('/auth/login', {
+          email: creds.email,
+          password: creds.password,
+          portal: creds.portal ?? 'customer',
+        })
+        .then((r) => r.data.data),
     onSuccess: async ({ user, accessToken, refreshToken }) => {
       const guestItems = useCartStore.getState().items;
       setAuth(toUser(user), accessToken, refreshToken);
-      if (guestItems.length > 0) {
+      if (!isStaffRole(user.role) && guestItems.length > 0) {
         try {
           await mergeGuestCartToServer(guestItems);
         } catch {
@@ -85,7 +93,6 @@ export function useRegister() {
 
 export function useLogout() {
   const { logout } = useAuthStore();
-  const { clearCart } = useCartStore();
   const queryClient = useQueryClient();
   const router = useRouter();
 
@@ -97,7 +104,6 @@ export function useLogout() {
     },
     onSettled: () => {
       logout();
-      clearCart();
       queryClient.clear();
       router.push('/');
     },

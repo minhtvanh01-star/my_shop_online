@@ -1,9 +1,13 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import api from '@/lib/api';
 import { formatMoney } from '@/lib/format-money';
+import { isAdminRole, staffHomePath } from '@/lib/roles';
+import { useCurrentUser } from '@/stores/authStore';
 
 type DashboardStats = {
   totalUsers: number;
@@ -15,11 +19,25 @@ type DashboardStats = {
 
 export default function AdminDashboardPage() {
   const t = useTranslations('Admin');
+  const locale = useLocale();
+  const router = useRouter();
+  const user = useCurrentUser();
+  const allowed = isAdminRole(user?.role);
+
+  useEffect(() => {
+    if (user && !isAdminRole(user.role)) {
+      router.replace(staffHomePath(user.role, locale));
+    }
+  }, [user, locale, router]);
+
   const stats = useQuery({
     queryKey: ['admin-dashboard'],
+    enabled: allowed,
     queryFn: () => api.get<{ data: DashboardStats }>('/admin/dashboard').then((r) => r.data.data),
   });
   const data = stats.data;
+
+  if (!allowed) return null;
 
   return (
     <div>

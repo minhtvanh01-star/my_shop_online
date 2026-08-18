@@ -12,15 +12,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLogin } from '@/hooks/useAuth';
-import { Link } from '@/i18n/navigation';
+import { Link, getPathname } from '@/i18n/navigation';
 import { getApiError, getApiErrorCode } from '@/lib/api';
+import { isStaffRole, staffHomePath } from '@/lib/roles';
 import { safeInternalPath } from '@/lib/safe-path';
 import { useCurrentUser, useHasHydrated } from '@/stores/authStore';
 
 const CTA_CLASS =
   'h-11 w-full cursor-pointer bg-[#EA580C] font-semibold text-black hover:bg-[#C2410C] hover:text-black';
 
-export function LoginForm() {
+export function LoginForm({ mode = 'customer' }: { mode?: 'customer' | 'staff' }) {
   const t = useTranslations('Auth');
   const locale = useLocale();
   const router = useRouter();
@@ -31,6 +32,8 @@ export function LoginForm() {
   const summaryRef = useRef<HTMLDivElement>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [needsStaffPortal, setNeedsStaffPortal] = useState(false);
+  const isStaff = mode === 'staff';
 
   const schema = useMemo(
     () =>
@@ -50,15 +53,35 @@ export function LoginForm() {
   } = useForm<Values>({
     resolver: zodResolver(schema),
     mode: 'onBlur',
+    defaultValues: {
+      email: searchParams.get('email') ?? '',
+      password: '',
+    },
   });
 
-  const redirectTo = safeInternalPath(searchParams.get('redirect'), `/${locale}`);
+  const defaultRedirect = isStaff
+    ? getPathname({ href: '/admin/dashboard', locale: locale as 'vi' | 'en' })
+    : `/${locale}`;
+  const redirectTo = safeInternalPath(searchParams.get('redirect'), defaultRedirect);
+  const staffLoginHref = searchParams.get('redirect')
+    ? { pathname: '/auth/staff-login' as const, query: { redirect: searchParams.get('redirect')! } }
+    : '/auth/staff-login';
 
   useEffect(() => {
-    if (hasHydrated && user) {
-      router.replace(redirectTo);
+    if (!hasHydrated || !user) return;
+    const userIsStaff = isStaffRole(user.role);
+    if (isStaff) {
+      if (userIsStaff) {
+        router.replace(searchParams.get('redirect') ? redirectTo : staffHomePath(user.role, locale));
+      }
+      return;
     }
-  }, [hasHydrated, user, redirectTo, router]);
+    if (userIsStaff) {
+      router.replace(staffHomePath(user.role, locale));
+      return;
+    }
+    router.replace(redirectTo);
+  }, [hasHydrated, user, redirectTo, router, isStaff, locale, searchParams]);
 
   const summaryItems = [
     errors.email ? { id: 'email', message: errors.email.message ?? '' } : null,
@@ -68,15 +91,29 @@ export function LoginForm() {
 
   async function onSubmit(values: Values) {
     setFormError(null);
+    setNeedsStaffPortal(false);
     try {
-      await login.mutateAsync(values);
-      router.replace(redirectTo);
+      const payload = await login.mutateAsync({ ...values, portal: mode });
+      const dest =
+        isStaff && !searchParams.get('redirect')
+          ? staffHomePath(payload.user.role, locale)
+          : redirectTo;
+      router.replace(dest);
       router.refresh();
     } catch (err) {
       const code = getApiErrorCode(err);
-      const message =
-        code === 'INVALID_CREDENTIALS' ? t('errors.invalidCredentials') : getApiError(err);
-      setFormError(message);
+      if (code === 'STAFF_USE_STAFF_PORTAL') {
+        setNeedsStaffPortal(true);
+        setFormError(t('errors.staffUseStaffPortal'));
+      } else {
+        const message =
+          code === 'INVALID_CREDENTIALS'
+            ? t('errors.invalidCredentials')
+            : code === 'STAFF_ACCESS_REQUIRED'
+              ? t('errors.staffAccessRequired')
+              : getApiError(err);
+        setFormError(message);
+      }
       requestAnimationFrame(() => summaryRef.current?.focus());
     }
   }
@@ -136,22 +173,42 @@ export function LoginForm() {
       </div>
 
       <Button type="submit" className={CTA_CLASS} disabled={isSubmitting || login.isPending}>
-        {isSubmitting || login.isPending ? t('loginSubmitting') : t('loginButton')}
+        {isSubmitting || login.isPending
+          ? t('loginSubmitting')
+          : isStaff
+            ? t('staffLoginButton')
+            : t('loginButton')}
       </Button>
 
-      <p className="text-sm text-[#475569]">
-        {t('noAccount')}{' '}
-        <Link
-          href={
-            searchParams.get('redirect')
-              ? { pathname: '/auth/register', query: { redirect: searchParams.get('redirect')! } }
-              : '/auth/register'
-          }
-          className="font-medium text-[#059669] underline-offset-2 hover:underline"
-        >
-          {t('registerLink')}
-        </Link>
-      </p>
+      {!isStaff && needsStaffPortal ? (
+        <p className="text-sm text-[#475569]">
+          <Link href={staffLoginHref} className="font-medium text-[#059669] underline-offset-2 hover:underline">
+            {t('staffLoginLink')}
+          </Link>
+        </p>
+      ) : null}
+
+      {isStaff ? (
+        <p className="text-sm text-[#475569]">
+          <Link href="/" className="font-medium text-[#059669] underline-offset-2 hover:underline">
+            {t('staffBackToShop')}
+          </Link>
+        </p>
+      ) : (
+        <p className="text-sm text-[#475569]">
+          {t('noAccount')}{' '}
+          <Link
+            href={
+              searchParams.get('redirect')
+                ? { pathname: '/auth/register', query: { redirect: searchParams.get('redirect')! } }
+                : '/auth/register'
+            }
+            className="font-medium text-[#059669] underline-offset-2 hover:underline"
+          >
+            {t('registerLink')}
+          </Link>
+        </p>
+      )}
     </form>
   );
 }

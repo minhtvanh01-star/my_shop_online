@@ -1,4 +1,5 @@
 import { prisma } from '../../config/database';
+import { auditLogListWhere } from '../../utils/audit-log';
 import type { AdminUsersQueryDto, AuditLogsQueryDto } from './admin.schema';
 
 export async function getDashboardStats() {
@@ -73,15 +74,10 @@ export async function listUsers(query: AdminUsersQueryDto) {
   return { users, total, page, limit };
 }
 
-export async function listAuditLogs(query: AuditLogsQueryDto) {
-  const { page, limit, actorId, resourceType, action } = query;
+export async function listAuditLogs(query: AuditLogsQueryDto, role: string) {
+  const { page, limit, actorId, resourceType, action, from, to } = query;
   const skip = (page - 1) * limit;
-
-  const where = {
-    ...(actorId ? { actorId } : {}),
-    ...(resourceType ? { resourceType } : {}),
-    ...(action ? { action } : {}),
-  };
+  const where = auditLogListWhere(role, { actorId, resourceType, action, from, to });
 
   const [logs, total] = await Promise.all([
     prisma.auditLog.findMany({
@@ -96,9 +92,12 @@ export async function listAuditLogs(query: AuditLogsQueryDto) {
         action: true,
         resourceType: true,
         resourceId: true,
+        oldValue: true,
+        newValue: true,
         ipAddress: true,
         isSensitive: true,
         createdAt: true,
+        actor: { select: { id: true, fullName: true } },
       },
     }),
     prisma.auditLog.count({ where }),

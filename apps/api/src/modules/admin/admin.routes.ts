@@ -25,11 +25,11 @@ router.get(
   listUsersHandler,
 );
 
-// GET /api/v1/admin/audit-logs  — audit trail (SUPER_ADMIN only)
+// GET /api/v1/admin/audit-logs  — ADMIN: non-sensitive; SUPER_ADMIN: all
 router.get(
   '/audit-logs',
   authenticate,
-  requireRole('SUPER_ADMIN'),
+  requireRole('ADMIN', 'SUPER_ADMIN'),
   listAuditLogsHandler,
 );
 

@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { readAccessTokenCookie } from '@/lib/auth-cookie';
 import { tokenManager } from '@/lib/api';
+import { isAdminRole, isStaffRole } from '@/lib/roles';
 import type { User } from '@/types';
 
 interface AuthState {
@@ -86,9 +87,10 @@ export const useAuthStore = create<AuthStore>()(
 export const useCurrentUser = () => useAuthStore((s) => s.user);
 export const useIsAuthenticated = () => useAuthStore((s) => s.user !== null);
 export const useIsAdmin = () =>
-  useAuthStore(
-    (s) => s.user?.role === 'ADMIN' || s.user?.role === 'SUPER_ADMIN',
-  );
+  useAuthStore((s) => isAdminRole(s.user?.role));
+
+export const useIsStaff = () =>
+  useAuthStore((s) => isStaffRole(s.user?.role ?? ''));
 export const useHasHydrated = () => useAuthStore((s) => s._hasHydrated);
 
 function memoryStorage(): Storage {

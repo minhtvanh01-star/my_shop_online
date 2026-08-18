@@ -25,7 +25,7 @@ export async function listUsersHandler(req: Request, res: Response, next: NextFu
 export async function listAuditLogsHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     const query = AuditLogsQuerySchema.parse(req.query);
-    const { logs, total, page, limit } = await AdminService.listAuditLogs(query);
+    const { logs, total, page, limit } = await AdminService.listAuditLogs(query, req.user!.role);
     paginated(res, logs, { page, limit, total });
   } catch (err) {
     next(err);

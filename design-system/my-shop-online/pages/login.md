@@ -21,4 +21,5 @@
 
 - Pages: `apps/web/src/app/[locale]/(storefront)/auth/login/page.tsx` and `auth/register/page.tsx`.
 - next-intl pathnames already map `vi: /dang-nhap`, `en: /auth/login`.
-- Access token must be available to middleware cookie `access-token` (today it only lives in localStorage — fix when building these pages).
+- Access token must be available to middleware cookie `access-token`.
+- Customer login must not advertise staff access. Staff use `/auth/staff-login` (see `staff-login.md`).

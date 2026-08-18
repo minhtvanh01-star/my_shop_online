@@ -4,7 +4,7 @@ import { routing } from './i18n/routing';
 
 const intlMiddleware = createMiddleware(routing);
 
-const PROTECTED_PREFIXES = [
+const STOREFRONT_PROTECTED_PREFIXES = [
   '/account',
   '/tai-khoan',
   '/orders',
@@ -13,8 +13,9 @@ const PROTECTED_PREFIXES = [
   '/thanh-toan',
   '/wishlist',
   '/yeu-thich',
-  '/admin',
 ];
+
+const ADMIN_PREFIX = '/admin';
 
 function stripLocale(pathname: string): string {
   for (const locale of routing.locales) {
@@ -26,30 +27,45 @@ function stripLocale(pathname: string): string {
   return pathname;
 }
 
-function isProtected(pathnameWithoutLocale: string): boolean {
-  return PROTECTED_PREFIXES.some(
+function localeFromPath(pathname: string): string {
+  return (
+    routing.locales.find((l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`))
+    ?? routing.defaultLocale
+  );
+}
+
+function localizedPath(locale: string, pathnameKey: '/auth/login' | '/auth/staff-login'): string {
+  const mapped = routing.pathnames[pathnameKey];
+  const slug = typeof mapped === 'string' ? mapped : mapped[locale as 'vi' | 'en'];
+  return `/${locale}${slug}`;
+}
+
+function isStorefrontProtected(pathnameWithoutLocale: string): boolean {
+  return STOREFRONT_PROTECTED_PREFIXES.some(
     (prefix) => pathnameWithoutLocale === prefix || pathnameWithoutLocale.startsWith(`${prefix}/`),
   );
 }
 
-function loginPath(locale: string): string {
-  const mapped = routing.pathnames['/auth/login'];
-  const slug = typeof mapped === 'string' ? mapped : mapped[locale as 'vi' | 'en'];
-  return `/${locale}${slug}`;
+function isAdminProtected(pathnameWithoutLocale: string): boolean {
+  return pathnameWithoutLocale === ADMIN_PREFIX || pathnameWithoutLocale.startsWith(`${ADMIN_PREFIX}/`);
 }
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const pathnameWithoutLocale = stripLocale(pathname);
+  const token = request.cookies.get('access-token')?.value;
 
-  if (isProtected(pathnameWithoutLocale)) {
-    const token = request.cookies.get('access-token')?.value;
-    if (!token) {
-      const locale =
-        routing.locales.find((l) => pathname === `/${l}` || pathname.startsWith(`/${l}/`))
-        ?? routing.defaultLocale;
+  if (!token) {
+    const locale = localeFromPath(pathname);
 
-      const url = new URL(loginPath(locale), request.url);
+    if (isAdminProtected(pathnameWithoutLocale)) {
+      const url = new URL(localizedPath(locale, '/auth/staff-login'), request.url);
+      url.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(url);
+    }
+
+    if (isStorefrontProtected(pathnameWithoutLocale)) {
+      const url = new URL(localizedPath(locale, '/auth/login'), request.url);
       url.searchParams.set('redirect', pathname);
       return NextResponse.redirect(url);
     }
