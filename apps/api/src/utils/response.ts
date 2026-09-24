@@ -11,7 +11,7 @@ export function created<T>(res: Response, data: T): Response {
 export function paginated<T>(
   res: Response,
   data: T[],
-  meta: { page: number; limit: number; total: number },
+  meta: { page: number; limit: number; total: number } & Record<string, unknown>,
 ): Response {
   return res.status(200).json({
     data,

@@ -13,6 +13,25 @@ import type {
 /** docs/03: do not re-alert within 24 hours (`lastAlertedAt`). */
 const ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
+const IN_STOCK_WHERE: Prisma.ProductWhereInput = {
+  OR: [
+    { stockQuantity: { gt: 0 } },
+    { variants: { some: { deletedAt: null, stockQuantity: { gt: 0 } } } },
+  ],
+};
+
+const OUT_OF_STOCK_WHERE: Prisma.ProductWhereInput = {
+  stockQuantity: { lte: 0 },
+  variants: { none: { deletedAt: null, stockQuantity: { gt: 0 } } },
+};
+
+function productWhere(and: Prisma.ProductWhereInput[]): Prisma.ProductWhereInput {
+  return {
+    deletedAt: null,
+    ...(and.length ? { AND: and } : {}),
+  };
+}
+
 const TX_TYPE: Record<AdjustStockDto['type'], InventoryTxType> = {
   purchase: InventoryTxType.purchase,
   adjustment: InventoryTxType.adjustment,
@@ -48,35 +67,23 @@ async function productIdsBelowAlert(): Promise<string[]> {
 }
 
 export async function listStockItems(query: InventoryListQueryDto) {
-  const { page, limit, search, inStock, lowStock } = query;
+  const { page, limit, search, categoryId, inStock, lowStock } = query;
   const skip = (page - 1) * limit;
   const locale = localeOrFallback(query.locale);
 
-  let lowStockIds: string[] | undefined;
-  if (lowStock) {
-    lowStockIds = await productIdsBelowAlert();
-    if (lowStockIds.length === 0) {
-      return { items: [], total: 0, page, limit };
-    }
-  }
+  const lowStockIds = await productIdsBelowAlert();
 
-  const and: Prisma.ProductWhereInput[] = [];
-  if (inStock === true) {
-    and.push({
+  const baseAnd: Prisma.ProductWhereInput[] = [];
+  if (categoryId) {
+    baseAnd.push({
       OR: [
-        { stockQuantity: { gt: 0 } },
-        { variants: { some: { deletedAt: null, stockQuantity: { gt: 0 } } } },
+        { categoryId },
+        { productCategories: { some: { categoryId } } },
       ],
     });
   }
-  if (inStock === false) {
-    and.push({
-      stockQuantity: { lte: 0 },
-      variants: { none: { deletedAt: null, stockQuantity: { gt: 0 } } },
-    });
-  }
   if (search) {
-    and.push({
+    baseAnd.push({
       OR: [
         { sku: { contains: search, mode: 'insensitive' } },
         { slug: { contains: search, mode: 'insensitive' } },
@@ -96,16 +103,31 @@ export async function listStockItems(query: InventoryListQueryDto) {
       ],
     });
   }
-  if (lowStockIds) {
-    and.push({ id: { in: lowStockIds } });
+
+  const listAnd = [...baseAnd];
+  if (inStock === true) listAnd.push(IN_STOCK_WHERE);
+  if (inStock === false) listAnd.push(OUT_OF_STOCK_WHERE);
+  if (lowStock) {
+    if (lowStockIds.length === 0) {
+      const [allCount, inStockCount, outOfStockCount] = await Promise.all([
+        prisma.product.count({ where: productWhere(baseAnd) }),
+        prisma.product.count({ where: productWhere([...baseAnd, IN_STOCK_WHERE]) }),
+        prisma.product.count({ where: productWhere([...baseAnd, OUT_OF_STOCK_WHERE]) }),
+      ]);
+      return {
+        items: [],
+        total: 0,
+        page,
+        limit,
+        counts: { all: allCount, inStock: inStockCount, outOfStock: outOfStockCount, lowStock: 0 },
+      };
+    }
+    listAnd.push({ id: { in: lowStockIds } });
   }
 
-  const where: Prisma.ProductWhereInput = {
-    deletedAt: null,
-    ...(and.length ? { AND: and } : {}),
-  };
+  const where = productWhere(listAnd);
 
-  const [total, products] = await Promise.all([
+  const [total, products, allCount, inStockCount, outOfStockCount, lowStockCount] = await Promise.all([
     prisma.product.count({ where }),
     prisma.product.findMany({
       where,
@@ -122,6 +144,12 @@ export async function listStockItems(query: InventoryListQueryDto) {
           select: { locale: true, name: true },
           take: locale ? 1 : 4,
         },
+        category: { select: { id: true, name: true } },
+        images: {
+          orderBy: [{ isPrimary: 'desc' }, { sortOrder: 'asc' }],
+          take: 1,
+          select: { url: true, altText: true },
+        },
         variants: {
           where: { deletedAt: null },
           select: {
@@ -130,7 +158,7 @@ export async function listStockItems(query: InventoryListQueryDto) {
             optionName: true,
             optionValue: true,
             stockQuantity: true,
-            isActive: true,
+            imageUrl: true,
           },
           orderBy: { sku: 'asc' },
         },
@@ -140,6 +168,12 @@ export async function listStockItems(query: InventoryListQueryDto) {
         },
       },
     }),
+    prisma.product.count({ where: productWhere(baseAnd) }),
+    prisma.product.count({ where: productWhere([...baseAnd, IN_STOCK_WHERE]) }),
+    prisma.product.count({ where: productWhere([...baseAnd, OUT_OF_STOCK_WHERE]) }),
+    lowStockIds.length
+      ? prisma.product.count({ where: productWhere([...baseAnd, { id: { in: lowStockIds } }]) })
+      : Promise.resolve(0),
   ]);
 
   const items = products.map((product) => {
@@ -147,6 +181,7 @@ export async function listStockItems(query: InventoryListQueryDto) {
       product.translations.find((row) => row.locale === locale)?.name
       ?? product.translations[0]?.name
       ?? product.sku;
+    const productImage = product.images[0];
     const productAlert = product.stockAlerts.find((row) => row.variantId == null);
     const rows = product.variants.length
       ? product.variants.map((variant) => {
@@ -157,6 +192,9 @@ export async function listStockItems(query: InventoryListQueryDto) {
             sku: variant.sku,
             name,
             optionLabel: `${variant.optionName}: ${variant.optionValue}`,
+            imageUrl: variant.imageUrl ?? productImage?.url ?? null,
+            imageAlt: productImage?.altText ?? name,
+            categoryName: product.category.name,
             stockQuantity: variant.stockQuantity,
             threshold: alert?.threshold ?? null,
             lowStock: alert != null && variant.stockQuantity <= alert.threshold,
@@ -169,6 +207,9 @@ export async function listStockItems(query: InventoryListQueryDto) {
             sku: product.sku,
             name,
             optionLabel: null as string | null,
+            imageUrl: productImage?.url ?? null,
+            imageAlt: productImage?.altText ?? name,
+            categoryName: product.category.name,
             stockQuantity: product.stockQuantity,
             threshold: productAlert?.threshold ?? null,
             lowStock: productAlert != null && product.stockQuantity <= productAlert.threshold,
@@ -178,11 +219,24 @@ export async function listStockItems(query: InventoryListQueryDto) {
       productId: product.id,
       sku: product.sku,
       name,
+      categoryName: product.category.name,
+      imageUrl: productImage?.url ?? null,
       lines: lowStock ? rows.filter((row) => row.lowStock) : rows,
     };
   }).filter((product) => product.lines.length > 0);
 
-  return { items, total, page, limit };
+  return {
+    items,
+    total,
+    page,
+    limit,
+    counts: {
+      all: allCount,
+      inStock: inStockCount,
+      outOfStock: outOfStockCount,
+      lowStock: lowStockCount,
+    },
+  };
 }
 
 export async function adjustStock(dto: AdjustStockDto, actorId: string) {

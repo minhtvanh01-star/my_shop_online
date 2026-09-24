@@ -1,17 +1,18 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, type FieldErrors } from 'react-hook-form';
 import { z } from 'zod';
-import { ErrorSummary } from '@/components/auth/ErrorSummary';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useLogin } from '@/hooks/useAuth';
+import { useToast } from '@/components/feedback/Toaster';
+import { useLogin, useGoogleLogin } from '@/hooks/useAuth';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { Link, getPathname } from '@/i18n/navigation';
 import { getApiError, getApiErrorCode } from '@/lib/api';
 import { isStaffRole, staffHomePath } from '@/lib/roles';
@@ -27,11 +28,11 @@ export function LoginForm({ mode = 'customer' }: { mode?: 'customer' | 'staff' }
   const router = useRouter();
   const searchParams = useSearchParams();
   const login = useLogin();
+  const googleLogin = useGoogleLogin();
+  const toast = useToast();
   const user = useCurrentUser();
   const hasHydrated = useHasHydrated();
-  const summaryRef = useRef<HTMLDivElement>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
   const [needsStaffPortal, setNeedsStaffPortal] = useState(false);
   const isStaff = mode === 'staff';
 
@@ -83,14 +84,30 @@ export function LoginForm({ mode = 'customer' }: { mode?: 'customer' | 'staff' }
     router.replace(redirectTo);
   }, [hasHydrated, user, redirectTo, router, isStaff, locale, searchParams]);
 
-  const summaryItems = [
-    errors.email ? { id: 'email', message: errors.email.message ?? '' } : null,
-    errors.password ? { id: 'password', message: errors.password.message ?? '' } : null,
-    formError ? { id: 'email', message: formError } : null,
-  ].filter((item): item is { id: string; message: string } => Boolean(item));
+  async function onGoogle(idToken: string) {
+    setNeedsStaffPortal(false);
+    try {
+      await googleLogin.mutateAsync({ idToken, locale });
+      router.replace(redirectTo);
+      router.refresh();
+    } catch (err) {
+      const code = getApiErrorCode(err);
+      if (code === 'STAFF_USE_STAFF_PORTAL') {
+        setNeedsStaffPortal(true);
+        toast.error(t('errorSummaryTitle'), [t('errors.staffUseStaffPortal')]);
+        return;
+      }
+      const message =
+        code === 'GOOGLE_NOT_CONFIGURED'
+          ? t('errors.googleNotConfigured')
+          : code === 'INVALID_GOOGLE_TOKEN' || code === 'GOOGLE_EMAIL_UNVERIFIED'
+            ? t('errors.googleFailed')
+            : getApiError(err);
+      toast.error(t('errorSummaryTitle'), [message]);
+    }
+  }
 
   async function onSubmit(values: Values) {
-    setFormError(null);
     setNeedsStaffPortal(false);
     try {
       const payload = await login.mutateAsync({ ...values, portal: mode });
@@ -104,7 +121,7 @@ export function LoginForm({ mode = 'customer' }: { mode?: 'customer' | 'staff' }
       const code = getApiErrorCode(err);
       if (code === 'STAFF_USE_STAFF_PORTAL') {
         setNeedsStaffPortal(true);
-        setFormError(t('errors.staffUseStaffPortal'));
+        toast.error(t('errorSummaryTitle'), [t('errors.staffUseStaffPortal')]);
       } else {
         const message =
           code === 'INVALID_CREDENTIALS'
@@ -112,20 +129,20 @@ export function LoginForm({ mode = 'customer' }: { mode?: 'customer' | 'staff' }
             : code === 'STAFF_ACCESS_REQUIRED'
               ? t('errors.staffAccessRequired')
               : getApiError(err);
-        setFormError(message);
+        toast.error(t('errorSummaryTitle'), [message]);
       }
-      requestAnimationFrame(() => summaryRef.current?.focus());
     }
   }
 
-  const onInvalid = () => {
-    requestAnimationFrame(() => summaryRef.current?.focus());
+  const onInvalid = (fieldErrors: FieldErrors<Values>) => {
+    toast.error(t('errorSummaryTitle'), [
+      fieldErrors.email?.message ?? '',
+      fieldErrors.password?.message ?? '',
+    ]);
   };
 
   return (
     <form className="mt-8 space-y-5" onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate>
-      <ErrorSummary title={t('errorSummaryTitle')} items={summaryItems} summaryRef={summaryRef} />
-
       <div className="space-y-1.5">
         <Label htmlFor="email">{t('email')}</Label>
         <Input
@@ -138,7 +155,7 @@ export function LoginForm({ mode = 'customer' }: { mode?: 'customer' | 'staff' }
           {...register('email')}
         />
         {errors.email ? (
-          <p id="email-error" className="text-sm text-[#DC2626]">
+          <p id="email-error" className="sr-only">
             {errors.email.message}
           </p>
         ) : null}
@@ -166,7 +183,7 @@ export function LoginForm({ mode = 'customer' }: { mode?: 'customer' | 'staff' }
           </button>
         </div>
         {errors.password ? (
-          <p id="password-error" className="text-sm text-[#DC2626]">
+          <p id="password-error" className="sr-only">
             {errors.password.message}
           </p>
         ) : null}
@@ -179,6 +196,18 @@ export function LoginForm({ mode = 'customer' }: { mode?: 'customer' | 'staff' }
             ? t('staffLoginButton')
             : t('loginButton')}
       </Button>
+
+      {!isStaff ? (
+        <p className="text-sm">
+          <Link href="/auth/forgot-password" className="font-medium text-[#059669] underline-offset-2 hover:underline">
+            {t('forgotPassword')}
+          </Link>
+        </p>
+      ) : null}
+
+      {!isStaff ? (
+        <GoogleSignInButton onCredential={onGoogle} disabled={googleLogin.isPending} />
+      ) : null}
 
       {!isStaff && needsStaffPortal ? (
         <p className="text-sm text-[#475569]">

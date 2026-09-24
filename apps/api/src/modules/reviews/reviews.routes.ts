@@ -10,12 +10,16 @@ import {
   updateReviewHandler,
   deleteReviewHandler,
   approveReviewHandler,
+  reviewSummaryHandler,
+  myReviewHandler,
 } from './reviews.controller';
 
 const router = Router();
 
 // GET /api/v1/reviews?productId=xxx — public: list approved reviews for a product
 router.get('/', listReviewsHandler);
+router.get('/summary', reviewSummaryHandler);
+router.get('/me', authenticate, requireFeature(FEATURE_KEYS.reviews), myReviewHandler);
 
 // POST /api/v1/reviews — customer: create review
 router.post('/', authenticate, requireFeature(FEATURE_KEYS.reviews), createReviewHandler);

@@ -47,12 +47,14 @@ type OrderDetail = {
   };
   orderItems: {
     id: string;
+    productId: string;
     productName: string;
     variantLabel: string | null;
     quantity: number;
     unitPrice: string | number;
     totalPrice: string | number;
     currency: string;
+    product?: { slug: string } | null;
   }[];
   payments: { id: string; provider: string; status: string }[];
   returnRequests?: ReturnRequest[];
@@ -145,6 +147,14 @@ export default function OrderDetailPage() {
               <p>{item.productName}</p>
               {item.variantLabel ? <p className="text-sm text-[#475569]">{item.variantLabel}</p> : null}
               <p className="text-sm text-[#475569]">× {item.quantity}</p>
+              {order.status === 'delivered' && item.product?.slug ? (
+                <Link
+                  href={{ pathname: '/products/[slug]', params: { slug: item.product.slug } }}
+                  className="mt-1 inline-block text-sm text-[#059669] underline-offset-2 hover:underline"
+                >
+                  {t('writeReview')}
+                </Link>
+              ) : null}
             </div>
             <p>{formatMoney(item.totalPrice, item.currency || order.currency, locale)}</p>
           </li>

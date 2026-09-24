@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/components/storefront/LocaleSwitch';
-import { HeaderSearch } from '@/components/storefront/HeaderSearch';
 import { useLogout } from '@/hooks/useAuth';
 import { staffHomePath } from '@/lib/roles';
 import { useShopSettings } from '@/components/storefront/ShopSettingsProvider';
@@ -60,7 +59,6 @@ export function Header() {
             </Link>
           ))}
         </nav>
-        <HeaderSearch className="min-w-0 flex-1 md:max-w-xs" />
         <div className="ml-auto flex items-center gap-1 md:gap-2">
           <LocaleSwitch />
           {hydrated && user ? (

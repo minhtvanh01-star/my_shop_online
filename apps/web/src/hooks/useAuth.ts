@@ -28,6 +28,24 @@ interface AuthPayload {
   refreshToken: string;
 }
 
+async function applySession(
+  setAuth: (user: User, accessToken: string, refreshToken: string) => void,
+  queryClient: ReturnType<typeof useQueryClient>,
+  payload: AuthPayload,
+  mergeCart: boolean,
+) {
+  const guestItems = useCartStore.getState().items;
+  setAuth(toUser(payload.user), payload.accessToken, payload.refreshToken);
+  if (mergeCart && guestItems.length > 0) {
+    try {
+      await mergeGuestCartToServer(guestItems);
+    } catch {
+      /* keep local cart if merge fails */
+    }
+  }
+  queryClient.invalidateQueries({ queryKey: ['cart'] });
+}
+
 function toUser(raw: AuthPayload['user']): User {
   return {
     id: raw.id,
@@ -54,17 +72,27 @@ export function useLogin() {
           portal: creds.portal ?? 'customer',
         })
         .then((r) => r.data.data),
-    onSuccess: async ({ user, accessToken, refreshToken }) => {
-      const guestItems = useCartStore.getState().items;
-      setAuth(toUser(user), accessToken, refreshToken);
-      if (!isStaffRole(user.role) && guestItems.length > 0) {
-        try {
-          await mergeGuestCartToServer(guestItems);
-        } catch {
-          /* keep local cart if merge fails */
-        }
-      }
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    onSuccess: async (payload) => {
+      await applySession(setAuth, queryClient, payload, !isStaffRole(payload.user.role));
+    },
+  });
+}
+
+export function useGoogleLogin() {
+  const { setAuth } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: { idToken: string; locale?: string }) =>
+      api
+        .post<{ data: AuthPayload }>('/auth/google', {
+          idToken: input.idToken,
+          portal: 'customer',
+          locale: input.locale,
+        })
+        .then((r) => r.data.data),
+    onSuccess: async (payload) => {
+      await applySession(setAuth, queryClient, payload, true);
     },
   });
 }
@@ -76,17 +104,8 @@ export function useRegister() {
   return useMutation({
     mutationFn: (data: RegisterData) =>
       api.post<{ data: AuthPayload }>('/auth/register', data).then((r) => r.data.data),
-    onSuccess: async ({ user, accessToken, refreshToken }) => {
-      const guestItems = useCartStore.getState().items;
-      setAuth(toUser(user), accessToken, refreshToken);
-      if (guestItems.length > 0) {
-        try {
-          await mergeGuestCartToServer(guestItems);
-        } catch {
-          /* keep local cart if merge fails */
-        }
-      }
-      queryClient.invalidateQueries({ queryKey: ['cart'] });
+    onSuccess: async (payload) => {
+      await applySession(setAuth, queryClient, payload, true);
     },
   });
 }

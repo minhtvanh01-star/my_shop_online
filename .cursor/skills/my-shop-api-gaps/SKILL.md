@@ -30,7 +30,7 @@ All modules in `apps/api/src/modules/` are **mounted** in `app.ts` (including **
 ## Later
 
 - VNPay refund API
-- **Google Sign-In (OAuth)** + send verify/reset codes via Gmail — parked 18/08, user asked to defer
+- **Google Sign-In (OAuth)** + Gmail SMTP verify/reset codes — done 18/08 (`POST /auth/google`, OTP via `email_logs`)
 - Inventory stock-alert email, shipping CRUD
 - Login lockout 5/min, httpOnly refresh cookie
 - Permission-matrix RBAC (today: role name checks only)

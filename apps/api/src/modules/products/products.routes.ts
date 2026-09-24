@@ -9,6 +9,7 @@ import {
   getAdminProductHandler,
   getProductHandler,
   getVariantsHandler,
+  importWooCsvHandler,
   listAdminProductsHandler,
   listProductsHandler,
   toggleActiveHandler,
@@ -20,6 +21,13 @@ const router = Router();
 router.get('/', listProductsHandler);
 router.get('/admin', authenticate, requireAdmin, listAdminProductsHandler);
 router.get('/admin/:id', authenticate, requireAdmin, getAdminProductHandler);
+router.post(
+  '/import',
+  authenticate,
+  requireAdmin,
+  auditLog('IMPORT_PRODUCTS', 'Product', { omitBody: true }),
+  importWooCsvHandler,
+);
 router.get('/:slug', getProductHandler);
 router.post('/', authenticate, requireAdmin, auditLog('CREATE_PRODUCT', 'Product'), createProductHandler);
 router.put('/:id', authenticate, requireAdmin, auditLog('UPDATE_PRODUCT', 'Product'), updateProductHandler);

@@ -6,6 +6,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ThemeProvider } from 'next-themes';
 import api, { tokenManager } from '@/lib/api';
 import { readAccessTokenCookie } from '@/lib/auth-cookie';
+import { ToastProvider } from '@/components/feedback/Toaster';
 import { ShopSettingsProvider } from '@/components/storefront/ShopSettingsProvider';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -90,8 +91,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
         <ShopSettingsProvider>
-          <AuthSessionBootstrap />
-          {children}
+          <ToastProvider>
+            <AuthSessionBootstrap />
+            {children}
+          </ToastProvider>
         </ShopSettingsProvider>
       </ThemeProvider>
       {process.env.NODE_ENV === 'development' && (

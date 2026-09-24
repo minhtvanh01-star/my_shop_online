@@ -592,6 +592,7 @@ export function ProductForm({
       </Section>
 
       <Section title={t('sections.specifications')}>
+        <p className="text-sm text-[#475569]">{t('form.specsHint')}</p>
         {form.specs.map((row, index) => (
           <div key={index} className="grid gap-2 md:grid-cols-[1fr_1fr_8rem_auto]">
             <Input
@@ -656,6 +657,7 @@ export function ProductForm({
       </Section>
 
       <Section title={t('sections.variants')}>
+        <p className="text-sm text-[#475569]">{t('form.variantsHint')}</p>
         {mode === 'edit' && existingVariants.length > 0 ? (
           <ul className="space-y-1 text-sm text-[#475569]">
             {existingVariants.map((row) => (

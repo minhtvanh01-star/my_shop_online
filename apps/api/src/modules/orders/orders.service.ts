@@ -26,6 +26,7 @@ function generateOrderNumber(): string {
 
 const orderItemSelect = {
   id: true,
+  productId: true,
   productName: true,
   variantLabel: true,
   sku: true,
@@ -33,6 +34,7 @@ const orderItemSelect = {
   unitPrice: true,
   totalPrice: true,
   currency: true,
+  product: { select: { slug: true } },
 };
 
 const orderSelect = {

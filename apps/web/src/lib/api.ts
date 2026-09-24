@@ -117,6 +117,12 @@ export interface PaginatedApiResponse<T> {
     totalPages: number;
     hasNextPage: boolean;
     hasPrevPage: boolean;
+    counts?: {
+      all: number;
+      inStock: number;
+      outOfStock: number;
+      lowStock: number;
+    };
   };
 }
 

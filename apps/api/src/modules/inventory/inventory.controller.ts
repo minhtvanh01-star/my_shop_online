@@ -12,7 +12,12 @@ export async function listStockItemsHandler(req: Request, res: Response, next: N
   try {
     const query = InventoryListQuery.parse(req.query);
     const result = await InventoryService.listStockItems(query);
-    paginated(res, result.items, { page: result.page, limit: result.limit, total: result.total });
+    paginated(res, result.items, {
+      page: result.page,
+      limit: result.limit,
+      total: result.total,
+      counts: result.counts,
+    });
   } catch (err) {
     next(err);
   }

@@ -84,7 +84,16 @@ export const CreateProductSchema = z.object({
 /** Catalog edits must not overwrite stock; use POST /inventory/adjust (BR-I02). */
 export const UpdateProductSchema = CreateProductSchema.partial().omit({ stockQuantity: true });
 
+export const ImportWooCsvSchema = z.object({
+  csv: z.string().min(10).max(8_000_000),
+  currency: z.string().min(3).max(8).default('VND'),
+  publish: z.boolean().default(false),
+  defaultStock: z.number().int().min(0).max(100000).default(0),
+  updateExisting: z.boolean().default(true),
+});
+
 export type ProductListQueryDto = z.infer<typeof ProductListQuery>;
 export type CreateProductDto = z.infer<typeof CreateProductSchema>;
 export type UpdateProductDto = z.infer<typeof UpdateProductSchema>;
 export type CreateVariantDto = z.infer<typeof CreateVariantSchema>;
+export type ImportWooCsvDto = z.infer<typeof ImportWooCsvSchema>;

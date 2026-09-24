@@ -2,9 +2,11 @@ import { NextFunction, Request, Response } from 'express';
 import { created, ok } from '../../utils/response';
 import {
   ForgotPasswordSchema,
+  GoogleLoginSchema,
   LoginSchema,
   RefreshSchema,
   RegisterSchema,
+  ResendVerificationSchema,
   ResetPasswordSchema,
   VerifyEmailSchema,
 } from './auth.schema';
@@ -24,6 +26,16 @@ export async function loginHandler(req: Request, res: Response, next: NextFuncti
   try {
     const dto = LoginSchema.parse(req.body);
     const result = await AuthService.login(dto, req.ip, req.headers['user-agent']);
+    ok(res, result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function googleLoginHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const dto = GoogleLoginSchema.parse(req.body);
+    const result = await AuthService.loginWithGoogle(dto, req.ip, req.headers['user-agent']);
     ok(res, result);
   } catch (err) {
     next(err);
@@ -54,7 +66,7 @@ export async function forgotPasswordHandler(req: Request, res: Response, next: N
   try {
     const { email } = ForgotPasswordSchema.parse(req.body);
     await AuthService.forgotPassword(email);
-    ok(res, { message: 'If an account with that email exists, a reset link has been sent.' });
+    ok(res, { message: 'If an account with that email exists, a reset code has been sent.' });
   } catch (err) {
     next(err);
   }
@@ -72,9 +84,19 @@ export async function resetPasswordHandler(req: Request, res: Response, next: Ne
 
 export async function verifyEmailHandler(req: Request, res: Response, next: NextFunction) {
   try {
-    const { token } = VerifyEmailSchema.parse(req.body);
-    await AuthService.verifyEmail(token);
+    const dto = VerifyEmailSchema.parse(req.body);
+    await AuthService.verifyEmail(dto);
     ok(res, { message: 'Email verified' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function resendVerificationHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { email } = ResendVerificationSchema.parse(req.body);
+    await AuthService.resendVerification(email);
+    ok(res, { message: 'If an account with that email exists, a verification code has been sent.' });
   } catch (err) {
     next(err);
   }

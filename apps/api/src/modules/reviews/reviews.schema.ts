@@ -8,10 +8,14 @@ export const ListReviewsQuerySchema = z.object({
 
 export const CreateReviewSchema = z.object({
   productId: z.string().uuid(),
-  orderItemId: z.string().uuid(),
+  orderItemId: z.string().uuid().optional(),
   rating: z.number().int().min(1).max(5),
   title: z.string().min(1).max(255).optional(),
   body: z.string().min(1).optional(),
+});
+
+export const ProductReviewQuerySchema = z.object({
+  productId: z.string().uuid(),
 });
 
 export const UpdateReviewSchema = z.object({
@@ -29,3 +33,4 @@ export type ListReviewsQueryDto = z.infer<typeof ListReviewsQuerySchema>;
 export type CreateReviewDto = z.infer<typeof CreateReviewSchema>;
 export type UpdateReviewDto = z.infer<typeof UpdateReviewSchema>;
 export type ApproveReviewDto = z.infer<typeof ApproveReviewSchema>;
+export type ProductReviewQueryDto = z.infer<typeof ProductReviewQuerySchema>;

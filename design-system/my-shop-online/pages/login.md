@@ -14,7 +14,7 @@
 
 - `autocomplete="username"` / `current-password` (login) and `new-password` (register).
 - Never block paste. Never use a cognitive puzzle as the only auth factor.
-- Visible labels. Failed submit → error summary + inline field errors.
+- Visible labels. Failed submit → toast at top-right (auto-hide ~7s) + `aria-invalid` / sr-only field errors. No in-form error summary box.
 - Icon-only controls need `aria-label`.
 
 ## Auth wiring

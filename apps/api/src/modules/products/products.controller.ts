@@ -4,6 +4,7 @@ import { created, ok, paginated } from '../../utils/response';
 import {
   CreateProductSchema,
   CreateVariantSchema,
+  ImportWooCsvSchema,
   ProductListQuery,
   UpdateProductSchema,
 } from './products.schema';
@@ -106,3 +107,14 @@ export async function createVariantHandler(req: Request, res: Response, next: Ne
     next(err);
   }
 }
+
+export async function importWooCsvHandler(req: Request, res: Response, next: NextFunction) {
+  try {
+    const dto = ImportWooCsvSchema.parse(req.body);
+    const result = await ProductsService.importWooCsv(dto, req.user!.id);
+    ok(res, result);
+  } catch (err) {
+    next(err);
+  }
+}
+

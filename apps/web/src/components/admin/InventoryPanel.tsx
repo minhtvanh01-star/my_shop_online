@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
@@ -18,9 +18,13 @@ import {
 import { ListFilterBar, type FilterFieldConfig } from '@/components/list/ListFilterBar';
 import { ListPagination } from '@/components/list/ListPagination';
 import api, { getApiError, type PaginatedApiResponse } from '@/lib/api';
+import type { ApiCategory } from '@/lib/catalog';
 import { ctaClassName } from '@/lib/brand';
 import { canManageInventory } from '@/lib/roles';
+import { cn } from '@/lib/utils';
 import { useCurrentUser } from '@/stores/authStore';
+
+type StockTab = 'all' | 'in' | 'out' | 'low';
 
 type StockLine = {
   productId: string;
@@ -28,6 +32,9 @@ type StockLine = {
   sku: string;
   name: string;
   optionLabel: string | null;
+  imageUrl: string | null;
+  imageAlt: string;
+  categoryName: string | null;
   stockQuantity: number;
   threshold: number | null;
   lowStock: boolean;
@@ -37,10 +44,22 @@ type StockProduct = {
   productId: string;
   sku: string;
   name: string;
+  categoryName?: string | null;
+  imageUrl?: string | null;
   lines: StockLine[];
 };
 
-const EMPTY_FILTERS = { search: '', inStock: '', lowStock: '' };
+const EMPTY_FILTERS = { search: '', categoryId: '' };
+
+function lineKey(line: Pick<StockLine, 'productId' | 'variantId'>) {
+  return `${line.productId}:${line.variantId ?? 'base'}`;
+}
+
+function stockStatus(line: StockLine): 'out' | 'low' | 'in' {
+  if (line.stockQuantity <= 0) return 'out';
+  if (line.lowStock) return 'low';
+  return 'in';
+}
 
 export function InventoryPanel() {
   const t = useTranslations('Admin');
@@ -51,6 +70,7 @@ export function InventoryPanel() {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [applied, setApplied] = useState(EMPTY_FILTERS);
+  const [tab, setTab] = useState<StockTab>('all');
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<StockLine | null>(null);
   const [quantity, setQuantity] = useState('');
@@ -59,6 +79,20 @@ export function InventoryPanel() {
   const [direction, setDirection] = useState<'in' | 'out'>('in');
   const [threshold, setThreshold] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+
+  const categoriesQuery = useQuery({
+    queryKey: ['categories-tree'],
+    queryFn: () => api.get<{ data: ApiCategory[] }>('/categories').then((r) => r.data.data),
+  });
+
+  const flatCategories = useMemo(
+    () =>
+      (categoriesQuery.data ?? []).flatMap((category) => [
+        category,
+        ...(category.children ?? []),
+      ]),
+    [categoriesQuery.data],
+  );
 
   const filterFields: FilterFieldConfig[] = useMemo(
     () => [
@@ -70,36 +104,28 @@ export function InventoryPanel() {
         className: 'min-w-[14rem] flex-[2] space-y-1',
       },
       {
-        key: 'inStock',
-        label: t('columns.stock'),
+        key: 'categoryId',
+        label: t('columns.category'),
         type: 'select',
         options: [
-          { value: '', label: t('filters.allStock') },
-          { value: 'true', label: t('filters.inStockOnly') },
-          { value: 'false', label: t('filters.outOfStockOnly') },
-        ],
-      },
-      {
-        key: 'lowStock',
-        label: t('stock.alerts'),
-        type: 'select',
-        options: [
-          { value: '', label: t('filters.allStock') },
-          { value: 'true', label: t('stock.lowStockOnly') },
+          { value: '', label: t('filters.allCategories') },
+          ...flatCategories.map((category) => ({ value: category.id, label: category.name })),
         ],
       },
     ],
-    [common, t],
+    [common, flatCategories, t],
   );
 
   const query = useQuery({
-    queryKey: ['inventory-items', applied, page, locale],
+    queryKey: ['inventory-items', applied, tab, page, locale],
     enabled: canManageInventory(user?.role),
     queryFn: () => {
       const params: Record<string, string | number> = { page, limit: 20, locale };
       if (applied.search) params.search = applied.search;
-      if (applied.inStock) params.inStock = applied.inStock;
-      if (applied.lowStock) params.lowStock = applied.lowStock;
+      if (applied.categoryId) params.categoryId = applied.categoryId;
+      if (tab === 'in') params.inStock = 'true';
+      if (tab === 'out') params.inStock = 'false';
+      if (tab === 'low') params.lowStock = 'true';
       return api.get<PaginatedApiResponse<StockProduct>>('/inventory/items', { params }).then((r) => r.data);
     },
   });
@@ -108,12 +134,13 @@ export function InventoryPanel() {
     queryKey: ['inventory-tx', selected?.productId, selected?.variantId],
     enabled: Boolean(selected) && canManageInventory(user?.role),
     queryFn: async () => {
+      if (!selected) throw new Error('no-line');
       const params: Record<string, string | number> = {
         page: 1,
         limit: 8,
-        productId: selected!.productId,
+        productId: selected.productId,
       };
-      if (selected?.variantId) params.variantId = selected.variantId;
+      if (selected.variantId) params.variantId = selected.variantId;
       return api
         .get<PaginatedApiResponse<{
           id: string;
@@ -170,18 +197,72 @@ export function InventoryPanel() {
   const rows = (query.data?.data ?? []).flatMap((product) => product.lines);
   const totalPages = query.data?.meta.totalPages ?? 1;
   const total = query.data?.meta.total ?? 0;
+  const counts = query.data?.meta.counts;
+
+  useEffect(() => {
+    if (!selected) return;
+    const next = rows.find((row) => lineKey(row) === lineKey(selected));
+    if (!next) return;
+    if (
+      next.stockQuantity !== selected.stockQuantity ||
+      next.threshold !== selected.threshold ||
+      next.lowStock !== selected.lowStock
+    ) {
+      setSelected(next);
+    }
+  }, [rows, selected]);
+
+  function selectLine(line: StockLine) {
+    setSelected(line);
+    setThreshold(line.threshold != null ? String(line.threshold) : '');
+    setFormError(null);
+  }
+
+  function changeTab(next: StockTab) {
+    setTab(next);
+    setPage(1);
+  }
 
   if (!canManageInventory(user?.role)) {
     return <p className="text-sm text-[#DC2626]">{errorsT('unauthorized')}</p>;
   }
 
+  const tabs: { id: StockTab; label: string; count: number }[] = [
+    { id: 'all', label: t('stock.tabs.all'), count: counts?.all ?? total },
+    { id: 'in', label: t('stock.tabs.inStock'), count: counts?.inStock ?? 0 },
+    { id: 'out', label: t('stock.tabs.outOfStock'), count: counts?.outOfStock ?? 0 },
+    { id: 'low', label: t('stock.tabs.lowStock'), count: counts?.lowStock ?? 0 },
+  ];
+
   return (
     <div>
       <h1 className="font-heading text-2xl text-[#064E3B]">{t('stock.title')}</h1>
       <p className="mt-1 text-sm text-[#475569]">{t('stock.lead')}</p>
-      <p className="mt-1 text-sm text-[#475569]">{t('filters.resultsCount', { count: total })}</p>
 
-      <div className="mt-6">
+      <div role="tablist" aria-label={t('columns.stock')} className="mt-6 flex flex-wrap gap-x-5 border-b border-[#E2E8F0]">
+        {tabs.map((item) => {
+          const active = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              className={cn(
+                '-mb-px border-b-2 py-2 text-sm transition-colors',
+                active
+                  ? 'border-[#059669] font-medium text-[#064E3B]'
+                  : 'border-transparent text-[#475569] hover:text-[#064E3B]',
+              )}
+              onClick={() => changeTab(item.id)}
+            >
+              {item.label} ({item.count})
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-4">
         <ListFilterBar
           fields={filterFields}
           values={filters}
@@ -199,16 +280,22 @@ export function InventoryPanel() {
         />
       </div>
 
-      <div className="mt-6 overflow-x-auto">
+      <div className="mt-4 flex items-center justify-between gap-3 text-sm text-[#475569]">
+        <p>{t('stock.itemsCount', { count: total })}</p>
+      </div>
+
+      <div className="mt-3 overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10">
+                <span className="sr-only">{t('stock.selectLine')}</span>
+              </TableHead>
               <TableHead>{t('columns.product')}</TableHead>
               <TableHead>{t('columns.sku')}</TableHead>
-              <TableHead>{t('columns.option')}</TableHead>
               <TableHead>{t('columns.stock')}</TableHead>
+              <TableHead>{t('columns.category')}</TableHead>
               <TableHead>{t('stock.threshold')}</TableHead>
-              <TableHead>{t('columns.status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -226,34 +313,68 @@ export function InventoryPanel() {
               </TableRow>
             ) : (
               rows.map((line) => {
-                const active =
-                  selected?.productId === line.productId && selected?.variantId === line.variantId;
+                const active = selected ? lineKey(selected) === lineKey(line) : false;
+                const status = stockStatus(line);
                 return (
                   <TableRow
-                    key={`${line.productId}:${line.variantId ?? 'base'}`}
-                    className={active ? 'bg-[#ECFDF5]' : 'cursor-pointer'}
-                    onClick={() => {
-                      setSelected(line);
-                      setThreshold(line.threshold != null ? String(line.threshold) : '');
-                      setFormError(null);
-                    }}
+                    key={lineKey(line)}
+                    aria-selected={active}
+                    className={cn(active ? 'bg-[#ECFDF5]' : 'cursor-pointer')}
+                    onClick={() => selectLine(line)}
                   >
-                    <TableCell className="font-medium">{line.name}</TableCell>
-                    <TableCell>{line.sku}</TableCell>
-                    <TableCell>{line.optionLabel ?? '—'}</TableCell>
-                    <TableCell className={line.stockQuantity <= 0 ? 'text-[#DC2626]' : undefined}>
-                      {line.stockQuantity}
-                    </TableCell>
-                    <TableCell>{line.threshold ?? '—'}</TableCell>
                     <TableCell>
-                      {line.lowStock ? (
-                        <Badge variant="danger">{t('stock.lowStock')}</Badge>
+                      <input
+                        type="checkbox"
+                        className="size-4 accent-[#059669]"
+                        checked={active}
+                        aria-label={t('stock.selectRow', { sku: line.sku })}
+                        onChange={() => selectLine(line)}
+                        onClick={(event) => event.stopPropagation()}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex min-w-[14rem] items-center gap-3">
+                        <div className="relative size-12 shrink-0 overflow-hidden rounded-md border border-[#E2E8F0] bg-[#F8FAFC]">
+                          {line.imageUrl ? (
+                            // Woo/R2 URLs vary; native img avoids next/image remote allowlist gaps.
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={line.imageUrl}
+                              alt={line.imageAlt || line.name}
+                              className="size-full object-cover"
+                            />
+                          ) : (
+                            <span className="flex size-full items-center justify-center text-[10px] text-[#94A3B8]">
+                              {t('stock.noImage')}
+                            </span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">{line.name}</p>
+                          {line.optionLabel ? (
+                            <p className="text-xs text-[#475569]">{line.optionLabel}</p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <code className="rounded bg-[#F1F5F9] px-1.5 py-0.5 text-xs">{line.sku}</code>
+                    </TableCell>
+                    <TableCell>
+                      {status === 'out' ? (
+                        <span className="font-medium text-[#DC2626]">{t('filters.outOfStockOnly')}</span>
+                      ) : status === 'low' ? (
+                        <div>
+                          <Badge variant="danger">{t('stock.lowStockQty', { count: line.stockQuantity })}</Badge>
+                        </div>
                       ) : (
-                        <Badge variant={line.stockQuantity > 0 ? 'success' : 'muted'}>
-                          {line.stockQuantity > 0 ? t('filters.inStockOnly') : t('filters.outOfStockOnly')}
-                        </Badge>
+                        <span className="font-medium text-[#059669]">
+                          {t('stock.inStockQty', { count: line.stockQuantity })}
+                        </span>
                       )}
                     </TableCell>
+                    <TableCell>{line.categoryName ?? '—'}</TableCell>
+                    <TableCell>{line.threshold ?? '—'}</TableCell>
                   </TableRow>
                 );
               })

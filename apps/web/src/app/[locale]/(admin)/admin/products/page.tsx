@@ -167,9 +167,17 @@ export default function AdminProductsPage() {
             {t('filters.resultsCount', { count: total })}
           </p>
         </div>
-        <Link href={`/${locale}/admin/products/new`} className={ctaClassName}>
-          {t('createProduct')}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link href={`/${locale}/admin/products/new`} className={ctaClassName}>
+            {t('createProduct')}
+          </Link>
+          <Link
+            href={`/${locale}/admin/products/import`}
+            className="inline-flex h-11 items-center border border-[#E2E8F0] px-4 text-sm text-[#064E3B] hover:border-[#059669]"
+          >
+            {t('importCsv')}
+          </Link>
+        </div>
       </div>
 
       <div className="mt-6">

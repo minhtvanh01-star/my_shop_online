@@ -6,6 +6,7 @@ import { ProductBreadcrumb } from '@/components/storefront/ProductBreadcrumb';
 import { ProductCard } from '@/components/storefront/ProductCard';
 import { ProductGallery } from '@/components/storefront/ProductGallery';
 import { ProductReviews } from '@/components/storefront/ProductReviews';
+import { ProductHtml } from '@/components/storefront/ProductHtml';
 import { SectionHeader } from '@/components/storefront/SectionHeader';
 import {
   productName,
@@ -79,9 +80,32 @@ export default async function ProductDetailPage({ params }: Props) {
       {description ? (
         <section className="mt-14 border-t border-[#E2E8F0] pt-10">
           <h2 className="font-heading text-xl text-[#064E3B]">{t('description')}</h2>
-          <div className="prose prose-sm mt-4 max-w-3xl whitespace-pre-wrap text-[#475569]">{description}</div>
+          <ProductHtml
+            html={description}
+            className="prose prose-sm mt-4 max-w-3xl text-[#475569] prose-p:my-2 prose-table:text-sm"
+          />
         </section>
       ) : null}
+
+      <section className="mt-14 border-t border-[#E2E8F0] pt-10">
+        <h2 className="font-heading text-xl text-[#064E3B]">{t('specifications')}</h2>
+        {product.specifications && product.specifications.length > 0 ? (
+          <dl className="mt-4 divide-y divide-[#E2E8F0] border border-[#E2E8F0]">
+            {product.specifications.map((spec) => (
+              <div key={`${spec.name}-${spec.value}`} className="grid grid-cols-2 gap-4 px-4 py-3 text-sm">
+                <dt className="text-[#475569]">{spec.name}</dt>
+                <dd className="text-[#064E3B]">
+                  {spec.value}
+                  {spec.unit ? ` ${spec.unit}` : ''}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <p className="mt-3 text-sm text-[#475569]">{t('specsEmptyHint')}</p>
+        )}
+      </section>
+
 
       <ProductReviews productId={product.id} />
 

@@ -32,5 +32,5 @@ Example: `/vi/dang-nhap-nhan-vien?server=hn-01&email=warehouse@myshop.dev&redire
 
 ## Accessibility
 
-- Same as login.md: paste allowed, `autocomplete` on email/password, error summary after failed submit.
+- Same as login.md: paste allowed, `autocomplete` on email/password, errors as top-right toast after failed submit (auto-hide ~7s).
 - `robots: noindex` — internal portal.

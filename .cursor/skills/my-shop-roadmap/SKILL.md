@@ -23,7 +23,7 @@ Next (do not skip):
 4. Customer forgot/reset password; review after delivery
 4. Admin customer lock/unlock if API exists or add a thin endpoint
 5. Session/cart-merge/webhook limiter leftovers
-6. Email send, **Google OAuth + mã xác minh qua Gmail** — later (parked 18/08; do not start now)
+6. ~~Email send, **Google OAuth + mã xác minh qua Gmail**~~ — customer Google Sign-In + Gmail SMTP OTP (18/08)
 7. Multi-server staff login — deferred
 
 ## Rules

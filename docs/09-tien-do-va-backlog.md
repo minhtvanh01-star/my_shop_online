@@ -193,21 +193,14 @@ Blocker bán hàng (VNPay `ok=`, FX dòng đơn, admin hủy hoàn kho) **đã s
 
 1. ~~**Sửa blocker bán hàng**~~ — xong 18/08: VNPay `ok=`; FX lúc tạo đơn; admin hủy hoàn kho.
 2. ~~**Kho / WAREHOUSE**~~ — xong 18/08: `inventory` API + `/admin/inventory` (không ảnh) + RBAC + tracking.
-3. **Tài khoản khách:** quên/reset mật khẩu (UI + gửi mail nếu có SMTP); đánh giá sau đơn `delivered`.
+3. ~~**Tài khoản khách:** quên/reset mật khẩu~~ — xong 18/08 (mã 6 số qua Gmail). Đánh giá sau đơn `delivered` vẫn còn.
 4. **Quản lý khách (admin):** khóa/mở `isActive` (cần API mới); xem đơn theo khách.
 5. Cookie/session + merge giỏ + limiter webhook + trần coupon + refund Stripe idempotent.
 6. Chi tiết đơn, blog/media — sau khi session/email ổn.
 7. Chọn server đăng nhập nhân viên / SSO — **để sau** (URL `?server=` đã giữ chỗ).
 
-### Để sau — Google (đã ghi nhận 18/08, **không làm lúc này**)
+### Google Sign-In + mã Gmail (làm 18/08)
 
-Người dùng yêu cầu, chủ đích làm sau khi bán hàng/kho ổn:
-
-| Việc | Ý nghĩa | Ghi chú kỹ thuật sẵn có |
-|------|---------|-------------------------|
-| **Đăng nhập bằng Google** | Nút “Tiếp tục với Google” trên login/register khách | Model `oauth_accounts` đã có; **chưa** route OAuth, chưa nút UI |
-| **Mã xác minh qua Google/Gmail** | Gửi mã/link xác thực email, quên mật khẩu, OTP qua hộp thư Google của khách | Token verify/reset đang nằm Redis; **chưa gửi SMTP**. Khi làm: Gmail API hoặc SMTP Google, ghi `email_logs` |
-
-Không đụng Google Authenticator (TOTP) trừ khi yêu cầu lại. Không bắt đầu slice này trước quên-mật-khẩu nội bộ / SMTP generic nếu chưa chọn nhà cung cấp mail.
+Khách: nút Google trên login/register; quên/reset/xác minh email gửi **mã 6 số** qua Gmail SMTP (`email_logs`). Nhân viên vẫn đăng nhập email/mật khẩu. Cần `GOOGLE_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID`, và App Password SMTP. Không dùng Google Authenticator (TOTP).
 
 Design system: `design-system/my-shop-online/`. Skills: `.cursor/skills/my-shop-*`.

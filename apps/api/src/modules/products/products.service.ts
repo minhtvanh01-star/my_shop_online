@@ -4,9 +4,18 @@ import { AppError } from '../../middlewares/error.middleware';
 import type {
   CreateProductDto,
   CreateVariantDto,
+  ImportWooCsvDto,
   ProductListQueryDto,
   UpdateProductDto,
 } from './products.schema';
+import { csvRowsToObjects, parseCsv } from '../../utils/csv';
+import { slugify } from '../../utils/slug';
+import {
+  mapWooCsvRow,
+  WOO_EXTERNAL_SOURCE,
+  WOO_IMPORT_NOTE,
+  type WooMappedProduct,
+} from '../../utils/woo-product-csv';
 
 function productSearchFilter(search: string, locale: string): Prisma.ProductWhereInput {
   return {
@@ -135,11 +144,14 @@ export async function getProductBySlug(slug: string, locale: string = 'en') {
         orderBy: { sortOrder: 'asc' },
         include: { category: { select: { id: true, slug: true, name: true } } },
       },
-      specifications: { where: { locale }, orderBy: { sortOrder: 'asc' } },
+      specifications: { orderBy: { sortOrder: 'asc' } },
     },
   });
   if (!product) throw new AppError(404, 'Product not found', 'NOT_FOUND');
-  return product;
+  const localeSpecs = product.specifications.filter((row) => row.locale === locale);
+  const specifications =
+    localeSpecs.length > 0 ? localeSpecs : product.specifications.filter((row) => row.locale === 'vi');
+  return { ...product, specifications };
 }
 
 /** Admin: load by UUID including inactive products (soft-deleted still 404). */
@@ -399,4 +411,238 @@ export async function createVariant(productId: string, dto: CreateVariantDto, cr
   if (existing) throw new AppError(409, 'Variant SKU already exists', 'DUPLICATE');
 
   return prisma.productVariant.create({ data: { productId, ...dto, createdBy } });
+}
+
+type ImportSkip = { externalId: string; name: string; reason: string };
+
+async function uniqueProductSlug(base: string, exceptId?: string): Promise<string> {
+  const root = base || 'product';
+  let slug = root;
+  let n = 1;
+  while (
+    await prisma.product.findFirst({
+      where: { slug, ...(exceptId ? { id: { not: exceptId } } : {}) },
+      select: { id: true },
+    })
+  ) {
+    slug = `${root.slice(0, 70)}-${n}`;
+    n += 1;
+  }
+  return slug;
+}
+
+async function uniqueProductSku(base: string, exceptId?: string): Promise<string> {
+  const root = base || 'SKU';
+  let sku = root;
+  let n = 1;
+  while (
+    await prisma.product.findFirst({
+      where: { sku, ...(exceptId ? { id: { not: exceptId } } : {}) },
+      select: { id: true },
+    })
+  ) {
+    sku = `${root.slice(0, 40)}-${n}`;
+    n += 1;
+  }
+  return sku;
+}
+
+async function uniqueCategorySlug(base: string): Promise<string> {
+  const root = base || 'category';
+  let slug = root;
+  let n = 1;
+  while (await prisma.category.findFirst({ where: { slug }, select: { id: true } })) {
+    slug = `${root.slice(0, 70)}-${n}`;
+    n += 1;
+  }
+  return slug;
+}
+
+async function ensureCategoryPath(parts: string[], actorId: string): Promise<string> {
+  let parentId: string | null = null;
+  let lastId = '';
+  for (const name of parts) {
+    const existing: { id: string } | null = await prisma.category.findFirst({
+      where: { name, parentId, deletedAt: null },
+      select: { id: true },
+    });
+    if (existing) {
+      lastId = existing.id;
+      parentId = existing.id;
+      continue;
+    }
+    const slug = await uniqueCategorySlug(slugify(name) || 'category');
+    const created: { id: string } = await prisma.category.create({
+      data: {
+        name,
+        slug,
+        parentId,
+        isActive: true,
+        createdBy: actorId,
+      },
+      select: { id: true },
+    });
+    lastId = created.id;
+    parentId = created.id;
+  }
+  return lastId;
+}
+
+async function resolveImportCategories(mapped: WooMappedProduct, actorId: string) {
+  const leafIds: string[] = [];
+  for (const path of mapped.categoryPaths) {
+    leafIds.push(await ensureCategoryPath(path, actorId));
+  }
+  if (leafIds.length === 0) {
+    leafIds.push(await ensureCategoryPath(['Sản phẩm'], actorId));
+  }
+  const unique = [...new Set(leafIds)];
+  return { categoryId: unique[0], categoryIds: unique };
+}
+
+function importPrices(mapped: WooMappedProduct, currency: string) {
+  const basePrice = mapped.salePrice ?? mapped.regularPrice;
+  if (!basePrice) return null;
+  const compareAt =
+    mapped.regularPrice && mapped.salePrice && mapped.regularPrice > mapped.salePrice
+      ? mapped.regularPrice
+      : undefined;
+  return { basePrice, compareAt, currency };
+}
+
+export async function importWooCsv(dto: ImportWooCsvDto, actorId: string) {
+  const rows = csvRowsToObjects(parseCsv(dto.csv));
+  const created: string[] = [];
+  const updated: string[] = [];
+  const skipped: ImportSkip[] = [];
+
+  for (const row of rows) {
+    const mapped = mapWooCsvRow(row);
+    if (!mapped) {
+      skipped.push({ externalId: row.ID || '', name: row.Tên || '', reason: 'missing_id_or_name' });
+      continue;
+    }
+    const prices = importPrices(mapped, dto.currency);
+    if (!prices) {
+      skipped.push({ externalId: mapped.externalId, name: mapped.name, reason: 'missing_price' });
+      continue;
+    }
+
+    const existing = await prisma.product.findFirst({
+      where: {
+        externalSource: WOO_EXTERNAL_SOURCE,
+        externalId: mapped.externalId,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (existing && !dto.updateExisting) {
+      skipped.push({ externalId: mapped.externalId, name: mapped.name, reason: 'already_imported' });
+      continue;
+    }
+
+    const { categoryId, categoryIds } = await resolveImportCategories(mapped, actorId);
+    const slug = await uniqueProductSlug(mapped.slug, existing?.id);
+    const sku = await uniqueProductSku(mapped.sku, existing?.id);
+    const images = mapped.imageUrls.map((url, index) => ({
+      url,
+      altText: mapped.name,
+      sortOrder: index,
+      isPrimary: index === 0,
+    }));
+    const translations = [
+      {
+        locale: 'vi',
+        name: mapped.name,
+        shortDescription: mapped.shortDescription || undefined,
+        description: mapped.description || undefined,
+      },
+      {
+        locale: 'en',
+        name: mapped.name,
+        shortDescription: mapped.shortDescription || undefined,
+        description: mapped.description || undefined,
+      },
+    ];
+    const importMeta = {
+      note: WOO_IMPORT_NOTE,
+      source: WOO_EXTERNAL_SOURCE,
+    };
+
+    if (existing) {
+      await updateProduct(
+        existing.id,
+        {
+          categoryId,
+          categoryIds,
+          slug,
+          sku,
+          type: mapped.type,
+          basePrice: prices.basePrice,
+          currency: prices.currency,
+          isActive: dto.publish && images.length > 0 ? true : undefined,
+          attributes: { catalogNote: WOO_IMPORT_NOTE },
+          externalId: mapped.externalId,
+          externalSource: WOO_EXTERNAL_SOURCE,
+          importMeta,
+          translations,
+          images,
+          prices: [
+            {
+              currency: prices.currency,
+              amount: prices.basePrice,
+              compareAt: prices.compareAt,
+            },
+          ],
+          specifications: [],
+        },
+        actorId,
+      );
+      updated.push(existing.id);
+      continue;
+    }
+
+    const product = await createProduct(
+      {
+        categoryId,
+        categoryIds,
+        slug,
+        sku,
+        type: mapped.type,
+        basePrice: prices.basePrice,
+        currency: prices.currency,
+        stockQuantity: dto.defaultStock,
+        isFeatured: false,
+        isActive: dto.publish && images.length > 0,
+        attributes: { catalogNote: WOO_IMPORT_NOTE },
+        externalId: mapped.externalId,
+        externalSource: WOO_EXTERNAL_SOURCE,
+        importMeta,
+        translations,
+        images,
+        prices: [
+          {
+            currency: prices.currency,
+            amount: prices.basePrice,
+            compareAt: prices.compareAt,
+          },
+        ],
+        specifications: [],
+        variants: [],
+      },
+      actorId,
+    );
+    created.push(product.id);
+  }
+
+  return {
+    created: created.length,
+    updated: updated.length,
+    skipped: skipped.length,
+    createdIds: created,
+    updatedIds: updated,
+    skippedRows: skipped,
+    note: WOO_IMPORT_NOTE,
+  };
 }
